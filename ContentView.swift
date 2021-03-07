@@ -36,24 +36,43 @@ struct ContentView: View {
 	let days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
 
     var body: some View {
-		Print("\(dateRanges.toString())")
 		ScrollView {
 			TextField("opening_hours", value: $dateRanges.string, formatter: formatter)
-				.padding()
+				.textFieldStyle(RoundedBorderTextFieldStyle())
 			ForEach(dateRanges.list.indices, id: \.self) { dayHoursIndex in
 				let dayHours = dateRanges.list[dayHoursIndex]
 				VStack {
 					// months
 					VStack {
-						ForEach(dayHours.months, id:\.self) { month in
-							Text(month.toString())
-								.font(.title)
+						ForEach(dayHours.months.indices, id:\.self) { monthIndex in
+							let month = dayHours.months[monthIndex]
+							HStack {
+								Spacer()
+								Button(month.toString(), action: {
+
+								})
+									.font(.title)
+								Spacer()
+								Button(action: {
+									dateRanges.list[dayHoursIndex].deleteMonthDayRange(at:monthIndex)
+								})
+								{
+									Image(systemName: "trash")
+										.font(.callout)
+										.foregroundColor(.gray)
+								}
+							}
 						}
+						Spacer()
+						Button("More months", action: {
+								dateRanges.list[dayHoursIndex].addMonthDayRange()
+						})
 					}
-					.padding()
+					Spacer()
 
 					// days
 					HStack {
+						Spacer()
 						ForEach(days.indices, id: \.self) { day in
 							VStack {
 								Text(days[day])
@@ -63,25 +82,58 @@ struct ContentView: View {
 								{
 									Image(systemName: "checkmark")
 										.padding(4)
-										.background(dayHours.daySet().contains(day) ? Color.blue : Color.gray.opacity(0.2))
+										.background(dayHours.daySet().count == 0 || dayHours.daySet().contains(day) ? Color.blue : Color.gray.opacity(0.2))
 										.clipShape(Circle())
 										.font(.callout)
 										.foregroundColor(.white)
 								}
 							}
 						}
+						Spacer()
+						if dayHours.months.count == 0 && dayHours.hours.count == 0 {
+							Button(action: {
+								dateRanges.deleteMonthDayHours(at: dayHoursIndex)
+							})
+							{
+								Image(systemName: "trash")
+									.font(.callout)
+									.foregroundColor(.gray)
+							}
+						}
 					}
 
 					// Hours
 					VStack {
-						ForEach(dayHours.hours, id:\.self) { hours in
-							Text(hours.toString())
-								.font(.title)
+						ForEach(dayHours.hours.indices, id:\.self) { hoursIndex in
+							let hours = dayHours.hours[hoursIndex]
+							HStack {
+								Spacer()
+								Button(hours.toString(), action: {
+
+								})
+									.font(.title)
+								Spacer()
+								Button(action: {
+									dateRanges.list[dayHoursIndex].deleteHoursRange(at: hoursIndex)
+								})
+								{
+									Image(systemName: "trash")
+										.font(.callout)
+										.foregroundColor(.gray)
+								}
+							}
 						}
+						Button("More hours", action: {
+								dateRanges.list[dayHoursIndex].addHoursRange()
+						})
 					}
 				}
 				.padding()
 			}
+			.padding()
+			Button("More days", action: {
+				dateRanges.addMonthDayHours()
+			})
 		}
     }
 }
