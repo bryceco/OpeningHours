@@ -22,8 +22,6 @@
 		02FF27E125F05BCE001B4910 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		02FF27E625F05BCE001B4910 /* OpeningHours.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpeningHours.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		02FF27E925F05BCE001B4910 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		02FF27F025F05BCE001B4910 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		02FF27F125F05BCE001B4910 /* macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = macOS.entitlements; sourceTree = "<group>"; };
 		02FF280025F07469001B4910 /* OpeningHours.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpeningHours.entitlements; sourceTree = "<group>"; };
 		02FF280125F2B94A001B4910 /* TagInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagInfo.swift; sourceTree = "<group>"; };
 		02FF280725F2CAC7001B4910 /* OpenHours.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenHours.swift; sourceTree = "<group>"; };
@@ -44,24 +42,15 @@
 			isa = PBXGroup;
 			children = (
 				02FF280025F07469001B4910 /* OpeningHours.entitlements */,
-				02FF27DE25F05BCD001B4910 /* Shared */,
-				02FF27E825F05BCE001B4910 /* iOS */,
-				02FF27EF25F05BCE001B4910 /* macOS */,
-				02FF27E725F05BCE001B4910 /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-		02FF27DE25F05BCD001B4910 /* Shared */ = {
-			isa = PBXGroup;
-			children = (
 				02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */,
 				02FF27E025F05BCD001B4910 /* ContentView.swift */,
 				02FF27E125F05BCE001B4910 /* Assets.xcassets */,
 				02FF280125F2B94A001B4910 /* TagInfo.swift */,
 				02FF280725F2CAC7001B4910 /* OpenHours.swift */,
 				022A1E2825F4A85300810DDE /* opening_hours.json */,
+				02FF27E925F05BCE001B4910 /* Info.plist */,
+				02FF27E725F05BCE001B4910 /* Products */,
 			);
-			path = Shared;
 			sourceTree = "<group>";
 		};
 		02FF27E725F05BCE001B4910 /* Products */ = {
@@ -72,29 +61,12 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		02FF27E825F05BCE001B4910 /* iOS */ = {
-			isa = PBXGroup;
-			children = (
-				02FF27E925F05BCE001B4910 /* Info.plist */,
-			);
-			path = iOS;
-			sourceTree = "<group>";
-		};
-		02FF27EF25F05BCE001B4910 /* macOS */ = {
-			isa = PBXGroup;
-			children = (
-				02FF27F025F05BCE001B4910 /* Info.plist */,
-				02FF27F125F05BCE001B4910 /* macOS.entitlements */,
-			);
-			path = macOS;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		02FF27E525F05BCE001B4910 /* OpeningHours (iOS) */ = {
+		02FF27E525F05BCE001B4910 /* OpeningHours */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 02FF27FA25F05BCE001B4910 /* Build configuration list for PBXNativeTarget "OpeningHours (iOS)" */;
+			buildConfigurationList = 02FF27FA25F05BCE001B4910 /* Build configuration list for PBXNativeTarget "OpeningHours" */;
 			buildPhases = (
 				02FF27E225F05BCE001B4910 /* Sources */,
 				02FF27E325F05BCE001B4910 /* Frameworks */,
@@ -104,7 +76,7 @@
 			);
 			dependencies = (
 			);
-			name = "OpeningHours (iOS)";
+			name = OpeningHours;
 			productName = "OpeningHours (iOS)";
 			productReference = 02FF27E625F05BCE001B4910 /* OpeningHours.app */;
 			productType = "com.apple.product-type.application";
@@ -136,7 +108,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				02FF27E525F05BCE001B4910 /* OpeningHours (iOS) */,
+				02FF27E525F05BCE001B4910 /* OpeningHours */,
 			);
 		};
 /* End PBXProject section */
@@ -288,7 +260,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = MKTTC6734C;
 				ENABLE_PREVIEWS = YES;
-				INFOPLIST_FILE = iOS/Info.plist;
+				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 14.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -313,7 +285,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = MKTTC6734C;
 				ENABLE_PREVIEWS = YES;
-				INFOPLIST_FILE = iOS/Info.plist;
+				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 14.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -342,7 +314,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		02FF27FA25F05BCE001B4910 /* Build configuration list for PBXNativeTarget "OpeningHours (iOS)" */ = {
+		02FF27FA25F05BCE001B4910 /* Build configuration list for PBXNativeTarget "OpeningHours" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				02FF27FB25F05BCE001B4910 /* Debug */,
