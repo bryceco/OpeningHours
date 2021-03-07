@@ -7,34 +7,30 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		022A1E2925F4A85300810DDE /* opening_hours.json in Resources */ = {isa = PBXBuildFile; fileRef = 022A1E2825F4A85300810DDE /* opening_hours.json */; };
 		02FF27F225F05BCE001B4910 /* OpeningHoursApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */; };
-		02FF27F325F05BCE001B4910 /* OpeningHoursApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */; };
 		02FF27F425F05BCE001B4910 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF27E025F05BCD001B4910 /* ContentView.swift */; };
-		02FF27F525F05BCE001B4910 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF27E025F05BCD001B4910 /* ContentView.swift */; };
 		02FF27F625F05BCE001B4910 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 02FF27E125F05BCE001B4910 /* Assets.xcassets */; };
-		02FF27F725F05BCE001B4910 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 02FF27E125F05BCE001B4910 /* Assets.xcassets */; };
+		02FF280225F2B94A001B4910 /* TagInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF280125F2B94A001B4910 /* TagInfo.swift */; };
+		02FF280825F2CAC7001B4910 /* OpenHours.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF280725F2CAC7001B4910 /* OpenHours.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		022A1E2825F4A85300810DDE /* opening_hours.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = opening_hours.json; sourceTree = "<group>"; };
 		02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpeningHoursApp.swift; sourceTree = "<group>"; };
 		02FF27E025F05BCD001B4910 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		02FF27E125F05BCE001B4910 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		02FF27E625F05BCE001B4910 /* OpeningHours.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpeningHours.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		02FF27E925F05BCE001B4910 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		02FF27EE25F05BCE001B4910 /* OpeningHours.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpeningHours.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		02FF27F025F05BCE001B4910 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		02FF27F125F05BCE001B4910 /* macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = macOS.entitlements; sourceTree = "<group>"; };
+		02FF280025F07469001B4910 /* OpeningHours.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpeningHours.entitlements; sourceTree = "<group>"; };
+		02FF280125F2B94A001B4910 /* TagInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagInfo.swift; sourceTree = "<group>"; };
+		02FF280725F2CAC7001B4910 /* OpenHours.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenHours.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		02FF27E325F05BCE001B4910 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		02FF27EB25F05BCE001B4910 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -47,6 +43,7 @@
 		02FF27D925F05BCD001B4910 = {
 			isa = PBXGroup;
 			children = (
+				02FF280025F07469001B4910 /* OpeningHours.entitlements */,
 				02FF27DE25F05BCD001B4910 /* Shared */,
 				02FF27E825F05BCE001B4910 /* iOS */,
 				02FF27EF25F05BCE001B4910 /* macOS */,
@@ -60,6 +57,9 @@
 				02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */,
 				02FF27E025F05BCD001B4910 /* ContentView.swift */,
 				02FF27E125F05BCE001B4910 /* Assets.xcassets */,
+				02FF280125F2B94A001B4910 /* TagInfo.swift */,
+				02FF280725F2CAC7001B4910 /* OpenHours.swift */,
+				022A1E2825F4A85300810DDE /* opening_hours.json */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -68,7 +68,6 @@
 			isa = PBXGroup;
 			children = (
 				02FF27E625F05BCE001B4910 /* OpeningHours.app */,
-				02FF27EE25F05BCE001B4910 /* OpeningHours.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -110,23 +109,6 @@
 			productReference = 02FF27E625F05BCE001B4910 /* OpeningHours.app */;
 			productType = "com.apple.product-type.application";
 		};
-		02FF27ED25F05BCE001B4910 /* OpeningHours (macOS) */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 02FF27FD25F05BCE001B4910 /* Build configuration list for PBXNativeTarget "OpeningHours (macOS)" */;
-			buildPhases = (
-				02FF27EA25F05BCE001B4910 /* Sources */,
-				02FF27EB25F05BCE001B4910 /* Frameworks */,
-				02FF27EC25F05BCE001B4910 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = "OpeningHours (macOS)";
-			productName = "OpeningHours (macOS)";
-			productReference = 02FF27EE25F05BCE001B4910 /* OpeningHours.app */;
-			productType = "com.apple.product-type.application";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -137,9 +119,6 @@
 				LastUpgradeCheck = 1250;
 				TargetAttributes = {
 					02FF27E525F05BCE001B4910 = {
-						CreatedOnToolsVersion = 12.5;
-					};
-					02FF27ED25F05BCE001B4910 = {
 						CreatedOnToolsVersion = 12.5;
 					};
 				};
@@ -158,7 +137,6 @@
 			projectRoot = "";
 			targets = (
 				02FF27E525F05BCE001B4910 /* OpeningHours (iOS) */,
-				02FF27ED25F05BCE001B4910 /* OpeningHours (macOS) */,
 			);
 		};
 /* End PBXProject section */
@@ -168,15 +146,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				022A1E2925F4A85300810DDE /* opening_hours.json in Resources */,
 				02FF27F625F05BCE001B4910 /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		02FF27EC25F05BCE001B4910 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				02FF27F725F05BCE001B4910 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -188,16 +159,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				02FF27F425F05BCE001B4910 /* ContentView.swift in Sources */,
+				02FF280825F2CAC7001B4910 /* OpenHours.swift in Sources */,
+				02FF280225F2B94A001B4910 /* TagInfo.swift in Sources */,
 				02FF27F225F05BCE001B4910 /* OpeningHoursApp.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		02FF27EA25F05BCE001B4910 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				02FF27F525F05BCE001B4910 /* ContentView.swift in Sources */,
-				02FF27F325F05BCE001B4910 /* OpeningHoursApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -320,11 +284,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = OpeningHours.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = MKTTC6734C;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = iOS/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -332,6 +297,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.Bryceco.OpeningHours;
 				PRODUCT_NAME = OpeningHours;
 				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -342,11 +309,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = OpeningHours.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = MKTTC6734C;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = iOS/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -354,57 +322,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.Bryceco.OpeningHours;
 				PRODUCT_NAME = OpeningHours;
 				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		02FF27FE25F05BCE001B4910 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = macOS/macOS.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = MKTTC6734C;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_PREVIEWS = YES;
-				INFOPLIST_FILE = macOS/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Bryceco.OpeningHours;
-				PRODUCT_NAME = OpeningHours;
-				SDKROOT = macosx;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		02FF27FF25F05BCE001B4910 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = macOS/macOS.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = MKTTC6734C;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_PREVIEWS = YES;
-				INFOPLIST_FILE = macOS/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Bryceco.OpeningHours;
-				PRODUCT_NAME = OpeningHours;
-				SDKROOT = macosx;
-				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -425,15 +347,6 @@
 			buildConfigurations = (
 				02FF27FB25F05BCE001B4910 /* Debug */,
 				02FF27FC25F05BCE001B4910 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		02FF27FD25F05BCE001B4910 /* Build configuration list for PBXNativeTarget "OpeningHours (macOS)" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				02FF27FE25F05BCE001B4910 /* Debug */,
-				02FF27FF25F05BCE001B4910 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
