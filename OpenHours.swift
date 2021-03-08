@@ -88,6 +88,29 @@ enum Hour: Hashable, CustomStringConvertible {
 		}
 	}
 
+	var asDate: Date {
+		get {
+			switch self {
+			case let .time(time):
+				let gregorian = Calendar(identifier: .gregorian)
+				var components = gregorian.dateComponents([.year,.month,.day],
+														  from: Date())
+				components.hour = time / 60
+				components.minute = time % 60
+				components.second = 0
+				let yourDate = gregorian.date(from: components)
+				return yourDate!
+			default:
+				return Date()
+			}
+		}
+		set {
+			let gregorian = Calendar(identifier: .gregorian)
+			let components = gregorian.dateComponents([.hour,.minute], from: newValue)
+			self = .time(components.hour!*60 + components.minute!)
+		}
+	}
+
 	var description: String {
 		return toString()
 	}
