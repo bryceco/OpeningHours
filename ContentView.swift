@@ -14,7 +14,7 @@ extension View {
 	}
 }
 
-class MyFormatter : Formatter {
+class NoFormatter : Formatter {
 	override func string(for obj: Any?) -> String? {
 		return obj as? String
 	}
@@ -24,18 +24,28 @@ class MyFormatter : Formatter {
 	}
 }
 
+struct TrashButton: View {
+	var onPress:() -> Void
+
+	var body: some View {
+		Button(action: {
+			onPress()
+		})
+		{
+			Image(systemName: "trash")
+				.font(.callout)
+				.foregroundColor(.gray)
+		}
+	}
+}
 
 struct MonthsView: View {
 	@ObservedObject var dateRanges: OpenHours
-	var dayHoursIndex: Int
-
+	var dayHours : MonthDayHours
 
 	var body: some View {
-		let dayHours = dateRanges.list[dayHoursIndex]
-
 		VStack {
-			ForEach(dayHours.months.indices, id:\.self) { monthIndex in
-				let month = dayHours.months[monthIndex]
+			ForEach(dayHours.months, id:\.self) { month in
 				HStack {
 					Spacer()
 					Button(month.toString(), action: {
@@ -43,13 +53,10 @@ struct MonthsView: View {
 					})
 						.font(.title)
 					Spacer()
-					Button(action: {
-						dateRanges.list[dayHoursIndex].deleteMonthDayRange(at:monthIndex)
-					})
-					{
-						Image(systemName: "trash")
-							.font(.callout)
-							.foregroundColor(.gray)
+					TrashButton() {
+						let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
+						let monthIndex = dateRanges.list[dayHoursIndex!].months.firstIndex(of: month)
+						dateRanges.list[dayHoursIndex!].deleteMonthDayRange(at:monthIndex!)
 					}
 				}
 				/*
@@ -85,7 +92,8 @@ struct MonthsView: View {
 			}
 			Spacer()
 			Button("More months", action: {
-					dateRanges.list[dayHoursIndex].addMonthDayRange()
+				let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
+				dateRanges.list[dayHoursIndex!].addMonthDayRange()
 			})
 		}
 	}
@@ -93,13 +101,11 @@ struct MonthsView: View {
 
 struct DaysView: View {
 	@ObservedObject var dateRanges: OpenHours
-	var dayHoursIndex: Int
+	var dayHours: MonthDayHours
 
 	let days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
 
-
 	var body: some View {
-		let dayHours = dateRanges.list[dayHoursIndex]
 		// days
 		HStack {
 			Spacer()
@@ -108,7 +114,8 @@ struct DaysView: View {
 					Text(days[day])
 						.font(.footnote)
 					Button(action: {
-						dateRanges.list[dayHoursIndex].toggleDay(day:day)
+						let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
+						dateRanges.list[dayHoursIndex!].toggleDay(day:day)
 					})
 					{
 						Image(systemName: "checkmark")
@@ -122,13 +129,9 @@ struct DaysView: View {
 			}
 			Spacer()
 			if dayHours.months.count == 0 && dayHours.hours.count == 0 {
-				Button(action: {
-					dateRanges.deleteMonthDayHours(at: dayHoursIndex)
-				})
-				{
-					Image(systemName: "trash")
-						.font(.callout)
-						.foregroundColor(.gray)
+				TrashButton() {
+					let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
+					dateRanges.deleteMonthDayHours(at: dayHoursIndex!)
 				}
 			}
 		}
@@ -137,10 +140,10 @@ struct DaysView: View {
 
 struct HoursView: View {
 	@ObservedObject var dateRanges: OpenHours
-	var dayHoursIndex: Int
+	var dayHours: MonthDayHours
 
 	var body: some View {
-		let dayHours = dateRanges.list[dayHoursIndex]
+		let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
 
 		VStack {
 			ForEach(dayHours.hours.indices, id:\.self) { hoursIndex in
@@ -154,27 +157,24 @@ struct HoursView: View {
 						.font(.title)
 #else
 					DatePicker("",
-							   selection:$dateRanges.list[dayHoursIndex].hours[hoursIndex].begin.asDate,
+							   selection:$dateRanges.list[dayHoursIndex!].hours[hoursIndex].begin.asDate,
 							   displayedComponents:.hourAndMinute)
 						.frame(width: 100)
 					Text("-")
-					DatePicker("",selection:$dateRanges.list[dayHoursIndex].hours[hoursIndex].end.asDate,
+DatePicker("",selection:$dateRanges.list[dayHoursIndex!].hours[hoursIndex].end.asDate,
 							   displayedComponents:.hourAndMinute)
 						.frame(width: 100)
 #endif
 					Spacer()
-					Button(action: {
-						dateRanges.list[dayHoursIndex].deleteHoursRange(at: hoursIndex)
-					})
-					{
-						Image(systemName: "trash")
-							.font(.callout)
-							.foregroundColor(.gray)
+					TrashButton() {
+						let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
+						dateRanges.list[dayHoursIndex!].deleteHoursRange(at: hoursIndex)
 					}
 				}
 			}
 			Button("More hours", action: {
-				dateRanges.list[dayHoursIndex].addHoursRange()
+				let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
+				dateRanges.list[dayHoursIndex!].addHoursRange()
 			})
 		}
 	}
@@ -187,7 +187,7 @@ struct ContentView: View {
 			Apr-Oct Mo-Sa 05:00-24:00; \
 			Apr-Oct Su 01:00-2:00,05:00-24:00
 			""")
-	let formatter = MyFormatter()
+	let formatter = NoFormatter()
 
 	@State private var currentDate = Date()
 	@State private var showsDatePicker = false
@@ -196,17 +196,17 @@ struct ContentView: View {
 		ScrollView {
 			TextField("opening_hours", value: $dateRanges.string, formatter: formatter)
 				.textFieldStyle(RoundedBorderTextFieldStyle())
-			ForEach(dateRanges.list.indices, id: \.self) { dayHoursIndex in
+			ForEach(dateRanges.list, id: \.self) { dayHours in
 				VStack {
 					// months
-					MonthsView(dateRanges: dateRanges, dayHoursIndex: dayHoursIndex)
+					MonthsView(dateRanges: dateRanges, dayHours: dayHours)
 					Spacer()
 
 					// days
-					DaysView(dateRanges: dateRanges, dayHoursIndex: dayHoursIndex)
+					DaysView(dateRanges: dateRanges, dayHours: dayHours)
 
 					// Hours
-					HoursView(dateRanges:dateRanges,dayHoursIndex:dayHoursIndex)
+					HoursView(dateRanges:dateRanges, dayHours:dayHours)
 				}
 				.padding()
 			}

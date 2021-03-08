@@ -329,6 +329,7 @@ struct DayRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 struct MonthDayRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 	var begin: MonthDay
 	var end: MonthDay
+	let id = UUID()
 
 	static let defaultValue = MonthDayRange(begin: MonthDay(month: .Jan, day: nil), end: MonthDay(month: .Dec, day: nil))
 
@@ -480,7 +481,7 @@ struct MonthDayHours: Scannable, Stringable, Hashable, CustomStringConvertible {
 class OpenHours: ObservableObject, CustomStringConvertible {
 
 	@Published var list : [MonthDayHours]
-	var textual : String
+	private var textual : String
 
 	var string: String {
 		get {
