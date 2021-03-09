@@ -14,6 +14,23 @@ extension View {
 	}
 }
 
+// https://stackoverflow.com/questions/63079221/deleting-list-elements-from-swiftuis-list
+struct SafeBinding<T: RandomAccessCollection & MutableCollection, C: View>: View {
+	typealias BoundElement = Binding<T.Element>
+	private let binding: BoundElement
+	private let content: (BoundElement) -> C
+
+	init(_ binding: Binding<T>, index: T.Index, @ViewBuilder content: @escaping (BoundElement) -> C) {
+		self.content = content
+		self.binding = .init(get: { binding.wrappedValue[index] },
+							 set: { binding.wrappedValue[index] = $0 })
+	}
+
+	var body: some View {
+		content(binding)
+	}
+}
+
 class NoFormatter : Formatter {
 	override func string(for obj: Any?) -> String? {
 		return obj as? String
@@ -54,9 +71,9 @@ struct MonthsView: View {
 						.font(.title)
 					Spacer()
 					TrashButton() {
-						let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
-						let monthIndex = dateRanges.list[dayHoursIndex!].months.firstIndex(of: month)
-						dateRanges.list[dayHoursIndex!].deleteMonthDayRange(at:monthIndex!)
+						let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)!
+						let monthIndex = dateRanges.list[dayHoursIndex].months.firstIndex(of: month)!
+						dateRanges.list[dayHoursIndex].deleteMonthDayRange(at:monthIndex)
 					}
 				}
 				/*
@@ -92,8 +109,8 @@ struct MonthsView: View {
 			}
 			Spacer()
 			Button("More months", action: {
-				let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
-				dateRanges.list[dayHoursIndex!].addMonthDayRange()
+				let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)!
+				dateRanges.list[dayHoursIndex].addMonthDayRange()
 			})
 		}
 	}
@@ -114,8 +131,8 @@ struct DaysView: View {
 					Text(days[day])
 						.font(.footnote)
 					Button(action: {
-						let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
-						dateRanges.list[dayHoursIndex!].toggleDay(day:day)
+						let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)!
+						dateRanges.list[dayHoursIndex].toggleDay(day:day)
 					})
 					{
 						Image(systemName: "checkmark")
@@ -130,9 +147,40 @@ struct DaysView: View {
 			Spacer()
 			if dayHours.months.count == 0 && dayHours.hours.count == 0 {
 				TrashButton() {
-					let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
-					dateRanges.deleteMonthDayHours(at: dayHoursIndex!)
+					let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)!
+					dateRanges.deleteMonthDayHours(at: dayHoursIndex)
 				}
+			}
+		}
+	}
+}
+
+struct HoursRowView: View {
+
+	@Binding var date1 : Date
+	@Binding var date2 : Date
+	let deleteRow : () -> Void
+
+	var body: some View {
+		HStack {
+#if false
+			Spacer()
+			Button(hours.toString(), action: {
+			})
+				.font(.title)
+#else
+			DatePicker("",
+					   selection:$date1,
+					   displayedComponents:.hourAndMinute)
+				.frame(width: 100)
+			Text("-")
+DatePicker("",selection:$date2,
+					   displayedComponents:.hourAndMinute)
+				.frame(width: 100)
+#endif
+			Spacer()
+			TrashButton() {
+				deleteRow()
 			}
 		}
 	}
@@ -143,39 +191,24 @@ struct HoursView: View {
 	var dayHours: MonthDayHours
 
 	var body: some View {
-		let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
+		if let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours) {
 
-		VStack {
-			ForEach(dayHours.hours.indices, id:\.self) { hoursIndex in
-				let hours = dayHours.hours[hoursIndex]
-
-				HStack {
-#if false
-					Spacer()
-					Button(hours.toString(), action: {
-					})
-						.font(.title)
-#else
-					DatePicker("",
-							   selection:$dateRanges.list[dayHoursIndex!].hours[hoursIndex].begin.asDate,
-							   displayedComponents:.hourAndMinute)
-						.frame(width: 100)
-					Text("-")
-DatePicker("",selection:$dateRanges.list[dayHoursIndex!].hours[hoursIndex].end.asDate,
-							   displayedComponents:.hourAndMinute)
-						.frame(width: 100)
-#endif
-					Spacer()
-					TrashButton() {
-						let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
-						dateRanges.list[dayHoursIndex!].deleteHoursRange(at: hoursIndex)
+			VStack {
+				ForEach(dayHours.hours.indices, id:\.self) { hoursIndex in
+					SafeBinding($dateRanges.list[dayHoursIndex].hours, index: hoursIndex) { binding in
+						HoursRowView(date1: binding.begin.asDate,
+									 date2: binding.end.asDate,
+									 deleteRow: {
+											let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
+											dateRanges.list[dayHoursIndex!].deleteHoursRange(at: hoursIndex)
+									 })
 					}
 				}
+				Button("More hours", action: {
+					let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
+					dateRanges.list[dayHoursIndex!].addHoursRange()
+				})
 			}
-			Button("More hours", action: {
-				let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
-				dateRanges.list[dayHoursIndex!].addHoursRange()
-			})
 		}
 	}
 }
