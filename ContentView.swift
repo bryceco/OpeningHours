@@ -31,6 +31,9 @@ struct SafeBinding<T: RandomAccessCollection & MutableCollection, C: View>: View
 	}
 }
 
+// A formatter that does nothing.
+// Necessary to force TextField to only send update events when editing completes,
+// rather than on every keystroke
 class NoFormatter : Formatter {
 	override func string(for obj: Any?) -> String? {
 		return obj as? String
@@ -42,11 +45,11 @@ class NoFormatter : Formatter {
 }
 
 struct TrashButton: View {
-	var onPress:() -> Void
+	var action:() -> Void
 
 	var body: some View {
 		Button(action: {
-			onPress()
+			action()
 		})
 		{
 			Image(systemName: "trash")
@@ -57,12 +60,12 @@ struct TrashButton: View {
 }
 
 struct MonthsView: View {
-	@ObservedObject var dateRanges: OpenHours
-	var dayHours : MonthDayHours
+	@ObservedObject var openHours: OpenHours
+	var group : MonthDayHours
 
 	var body: some View {
 		VStack {
-			ForEach(dayHours.months, id:\.self) { month in
+			ForEach(group.months, id:\.self) { month in
 				HStack {
 					Spacer()
 					Button(month.toString(), action: {
@@ -71,9 +74,9 @@ struct MonthsView: View {
 						.font(.title)
 					Spacer()
 					TrashButton() {
-						let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)!
-						let monthIndex = dateRanges.list[dayHoursIndex].months.firstIndex(of: month)!
-						dateRanges.list[dayHoursIndex].deleteMonthDayRange(at:monthIndex)
+						let dayHoursIndex = openHours.groups.firstIndex(of: group)!
+						let monthIndex = openHours.groups[dayHoursIndex].months.firstIndex(of: month)!
+						openHours.groups[dayHoursIndex].deleteMonthDayRange(at:monthIndex)
 					}
 				}
 				/*
@@ -109,16 +112,16 @@ struct MonthsView: View {
 			}
 			Spacer()
 			Button("More months", action: {
-				let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)!
-				dateRanges.list[dayHoursIndex].addMonthDayRange()
+				let dayHoursIndex = openHours.groups.firstIndex(of: group)!
+				openHours.groups[dayHoursIndex].addMonthDayRange()
 			})
 		}
 	}
 }
 
-struct DaysView: View {
-	@ObservedObject var dateRanges: OpenHours
-	var dayHours: MonthDayHours
+struct DaysOfWeekView: View {
+	@ObservedObject var openHours: OpenHours
+	var group: MonthDayHours
 
 	let days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
 
@@ -131,13 +134,13 @@ struct DaysView: View {
 					Text(days[day])
 						.font(.footnote)
 					Button(action: {
-						let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)!
-						dateRanges.list[dayHoursIndex].toggleDay(day:day)
+						let dayHoursIndex = openHours.groups.firstIndex(of: group)!
+						openHours.groups[dayHoursIndex].toggleDay(day:day)
 					})
 					{
 						Image(systemName: "checkmark")
 							.padding(4)
-							.background(dayHours.daySet().count == 0 || dayHours.daySet().contains(day) ? Color.blue : Color.gray.opacity(0.2))
+							.background(group.daySet().count == 0 || group.daySet().contains(day) ? Color.blue : Color.gray.opacity(0.2))
 							.clipShape(Circle())
 							.font(.footnote)
 							.foregroundColor(.white)
@@ -145,10 +148,10 @@ struct DaysView: View {
 				}
 			}
 			Spacer()
-			if dayHours.months.count == 0 && dayHours.hours.count == 0 {
+			if group.months.count == 0 && group.hours.count == 0 {
 				TrashButton() {
-					let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)!
-					dateRanges.deleteMonthDayHours(at: dayHoursIndex)
+					let dayHoursIndex = openHours.groups.firstIndex(of: group)!
+					openHours.deleteMonthDayHours(at: dayHoursIndex)
 				}
 			}
 		}
@@ -159,54 +162,48 @@ struct HoursRowView: View {
 
 	@Binding var date1 : Date
 	@Binding var date2 : Date
-	let deleteRow : () -> Void
+	let deleteAction : () -> Void
 
 	var body: some View {
 		HStack {
-#if false
-			Spacer()
-			Button(hours.toString(), action: {
-			})
-				.font(.title)
-#else
 			DatePicker("",
 					   selection:$date1,
 					   displayedComponents:.hourAndMinute)
 				.frame(width: 100)
 			Text("-")
-DatePicker("",selection:$date2,
+			DatePicker("",
+					   selection:$date2,
 					   displayedComponents:.hourAndMinute)
 				.frame(width: 100)
-#endif
 			Spacer()
 			TrashButton() {
-				deleteRow()
+				deleteAction()
 			}
 		}
 	}
 }
 
 struct HoursView: View {
-	@ObservedObject var dateRanges: OpenHours
-	var dayHours: MonthDayHours
+	@ObservedObject var openHours: OpenHours
+	var group: MonthDayHours
 
 	var body: some View {
-		if let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours) {
+		if let dayHoursIndex = openHours.groups.firstIndex(of: group) {
 
 			VStack {
-				ForEach(dayHours.hours.indices, id:\.self) { hoursIndex in
-					SafeBinding($dateRanges.list[dayHoursIndex].hours, index: hoursIndex) { binding in
+				ForEach(group.hours.indices, id:\.self) { hoursIndex in
+					SafeBinding($openHours.groups[dayHoursIndex].hours, index: hoursIndex) { binding in
 						HoursRowView(date1: binding.begin.asDate,
 									 date2: binding.end.asDate,
-									 deleteRow: {
-											let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
-											dateRanges.list[dayHoursIndex!].deleteHoursRange(at: hoursIndex)
+									 deleteAction: {
+										let dayHoursIndex = openHours.groups.firstIndex(of: group)
+										openHours.groups[dayHoursIndex!].deleteHoursRange(at: hoursIndex)
 									 })
 					}
 				}
 				Button("More hours", action: {
-					let dayHoursIndex = dateRanges.list.firstIndex(of: dayHours)
-					dateRanges.list[dayHoursIndex!].addHoursRange()
+					let dayHoursIndex = openHours.groups.firstIndex(of: group)
+					openHours.groups[dayHoursIndex!].addHoursRange()
 				})
 			}
 		}
@@ -229,17 +226,17 @@ struct ContentView: View {
 		ScrollView {
 			TextField("opening_hours", value: $dateRanges.string, formatter: formatter)
 				.textFieldStyle(RoundedBorderTextFieldStyle())
-			ForEach(dateRanges.list, id: \.self) { dayHours in
+			ForEach(dateRanges.groups, id: \.self) { group in
 				VStack {
 					// months
-					MonthsView(dateRanges: dateRanges, dayHours: dayHours)
+					MonthsView(openHours: dateRanges, group: group)
 					Spacer()
 
 					// days
-					DaysView(dateRanges: dateRanges, dayHours: dayHours)
+					DaysOfWeekView(openHours: dateRanges, group: group)
 
 					// Hours
-					HoursView(dateRanges:dateRanges, dayHours:dayHours)
+					HoursView(openHours:dateRanges, group:group)
 				}
 				.padding()
 			}
