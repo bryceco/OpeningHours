@@ -59,6 +59,70 @@ struct TrashButton: View {
 	}
 }
 
+struct MonthDayPickerModal: View {
+	@Binding var monthDay: MonthDay
+	@Binding var isPresented: Bool
+
+	init( monthDay: Binding<MonthDay>, isPresented: Binding<Bool>) {
+		self._monthDay = monthDay
+		self._isPresented = isPresented
+		self._temp = State(initialValue: monthDay.wrappedValue)
+	}
+
+	private let dayCases:[Int?] = [nil,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+								   16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
+
+	@State var temp: MonthDay
+
+	var body: some View {
+
+		VStack(spacing: 50) {
+
+			HStack {
+				Picker("", selection: $temp.month, content: { // <2>
+					ForEach(Month.allCases, id:\.self) { month in
+						Text(month.toString())
+					}
+				})
+					.frame(width: 80)
+					.clipped()
+
+				Picker("", selection: $temp.day, content: { // <2>
+					Text(" ")
+					ForEach(dayCases, id:\.self) { day in
+						Text(day == nil ? " " : "\(day!)")
+					}
+				})
+					.frame(width: 80)
+					.clipped()
+			}
+
+			Text("\(temp.toString())")
+
+			Button(action: {
+				isPresented = false
+				monthDay = temp
+			}, label: {
+				Label("Close", systemImage: "xmark.circle")
+			})
+		}
+	}
+}
+struct MonthDayPicker: View {
+	@Binding var binding : MonthDay
+
+	@State private var showModalView: Bool = false
+
+	var body: some View {
+		Button(binding.toString(), action:{
+			showModalView = true
+		})
+		.popover(isPresented: $showModalView, content: {
+			MonthDayPickerModal(monthDay: $binding, isPresented: $showModalView)
+		})
+	}
+}
+
 struct MonthsView: View {
 	@ObservedObject var openHours: OpenHours
 	var group : MonthDayHours
@@ -66,49 +130,24 @@ struct MonthsView: View {
 	var body: some View {
 		VStack {
 			ForEach(group.months, id:\.self) { month in
-				HStack {
-					Spacer()
-					Button(month.toString(), action: {
-
-					})
-						.font(.title)
-					Spacer()
-					TrashButton() {
-						let dayHoursIndex = openHours.groups.firstIndex(of: group)!
-						let monthIndex = openHours.groups[dayHoursIndex].months.firstIndex(of: month)!
-						openHours.groups[dayHoursIndex].deleteMonthDayRange(at:monthIndex)
-					}
-				}
-				/*
-				HStack {
-					Picker(selection: $selectedGenere, label: Text(month.toString())) {
-						ForEach(0..<12) {
-							Text("\($0)")
+				if let dayHoursIndex = openHours.groups.firstIndex(of: group),
+				   let monthIndex = openHours.groups[dayHoursIndex].months.firstIndex(of: month)
+				{
+					HStack {
+						Spacer()
+						MonthDayPicker(binding: $openHours.groups[dayHoursIndex].months[monthIndex].begin)
+							.font(.title)
+						Text("-")
+						MonthDayPicker(binding: $openHours.groups[dayHoursIndex].months[monthIndex].end)
+							.font(.title)
+						Spacer()
+						TrashButton() {
+							let dayHoursIndex = openHours.groups.firstIndex(of: group)!
+							let monthIndex = openHours.groups[dayHoursIndex].months.firstIndex(of: month)!
+							openHours.groups[dayHoursIndex].deleteMonthDayRange(at:monthIndex)
 						}
 					}
-					.frame(width: 50)
-					.clipped()
-					Text(":")
-					Picker(selection: $selectedGenere, label: Text(hours.begin.toString())) {
-						ForEach(0..<12) {
-							Text("\(5*$0)")
-						}
-					}
-					.frame(width: 50,height:50)
-						.clipped()
-					Text("-")
-					DatePicker("",selection:$dateRanges.list[dayHoursIndex].hours[hoursIndex].end.asDate, displayedComponents:.hourAndMinute)
-					Spacer()
-					Button(action: {
-						dateRanges.list[dayHoursIndex].deleteHoursRange(at: hoursIndex)
-					})
-					{
-						Image(systemName: "trash")
-							.font(.callout)
-							.foregroundColor(.gray)
-					}
 				}
-	*/
 			}
 			Spacer()
 			Button("More months", action: {
@@ -166,6 +205,7 @@ struct HoursRowView: View {
 
 	var body: some View {
 		HStack {
+			Spacer()
 			DatePicker("",
 					   selection:$date1,
 					   displayedComponents:.hourAndMinute)
