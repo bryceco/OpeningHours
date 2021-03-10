@@ -83,8 +83,8 @@ struct MonthDayPickerModal: View {
 						Text(month.toString())
 					}
 				})
-					.frame(width: 80)
-					.clipped()
+				.frame(width: 80)
+				.clipped()
 
 				Picker("", selection: $temp.day, content: { // <2>
 					Text(" ")
@@ -92,8 +92,8 @@ struct MonthDayPickerModal: View {
 						Text(day == nil ? " " : "\(day!)")
 					}
 				})
-					.frame(width: 80)
-					.clipped()
+				.frame(width: 80)
+				.clipped()
 			}
 
 			Button(action: {
@@ -131,32 +131,33 @@ struct MonthsView: View {
 	var group : MonthDayHours
 
 	var body: some View {
-		VStack {
-			ForEach(group.months, id:\.self) { month in
-				if let dayHoursIndex = openHours.groups.firstIndex(of: group),
-				   let monthIndex = openHours.groups[dayHoursIndex].months.firstIndex(of: month)
-				{
-					HStack {
-						Spacer()
-						MonthDayPicker(binding: $openHours.groups[dayHoursIndex].months[monthIndex].begin)
-							.font(.title)
-						Text("-")
-						MonthDayPicker(binding: $openHours.groups[dayHoursIndex].months[monthIndex].end)
-							.font(.title)
-						Spacer()
-						TrashButton() {
-							let dayHoursIndex = openHours.groups.firstIndex(of: group)!
-							let monthIndex = openHours.groups[dayHoursIndex].months.firstIndex(of: month)!
-							openHours.groups[dayHoursIndex].deleteMonthDayRange(at:monthIndex)
+		if let dayHoursIndex = openHours.groups.firstIndex(of: group) {
+
+			VStack {
+				ForEach(openHours.groups[dayHoursIndex].months.indices, id:\.self) { monthIndex in
+					SafeBinding($openHours.groups[dayHoursIndex].months, index:monthIndex) { month in
+						HStack {
+							Spacer()
+							MonthDayPicker(binding: month.begin)
+								.font(.title)
+							Text("-")
+							MonthDayPicker(binding: month.end)
+								.font(.title)
+							Spacer()
+							TrashButton() {
+								let dayHoursIndex = openHours.groups.firstIndex(of: group)!
+								let monthIndex = openHours.groups[dayHoursIndex].months.firstIndex(of: month.wrappedValue)!
+								openHours.groups[dayHoursIndex].deleteMonthDayRange(at:monthIndex)
+							}
 						}
 					}
 				}
+				Spacer()
+				Button("More months", action: {
+					let dayHoursIndex = openHours.groups.firstIndex(of: group)!
+					openHours.groups[dayHoursIndex].addMonthDayRange()
+				})
 			}
-			Spacer()
-			Button("More months", action: {
-				let dayHoursIndex = openHours.groups.firstIndex(of: group)!
-				openHours.groups[dayHoursIndex].addMonthDayRange()
-			})
 		}
 	}
 }
