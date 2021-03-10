@@ -62,6 +62,7 @@ struct TrashButton: View {
 struct MonthDayPickerModal: View {
 	@Binding var monthDay: MonthDay
 	@Binding var isPresented: Bool
+	@State private var temp: MonthDay
 
 	init( monthDay: Binding<MonthDay>, isPresented: Binding<Bool>) {
 		self._monthDay = monthDay
@@ -72,11 +73,9 @@ struct MonthDayPickerModal: View {
 	private let dayCases:[Int?] = [nil,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
 								   16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
 
-	@State var temp: MonthDay
-
 	var body: some View {
 
-		VStack(spacing: 50) {
+		VStack {
 
 			HStack {
 				Picker("", selection: $temp.month, content: { // <2>
@@ -97,15 +96,19 @@ struct MonthDayPickerModal: View {
 					.clipped()
 			}
 
-			Text("\(temp.toString())")
-
 			Button(action: {
 				isPresented = false
 				monthDay = temp
 			}, label: {
-				Label("Close", systemImage: "xmark.circle")
+				Text("OK")
 			})
 		}
+		.padding()
+		.background(Color.white)
+		.cornerRadius(20)
+		.frame(maxWidth: .infinity,	maxHeight: .infinity)
+		.background(Color.black.opacity(0.2))
+		.ignoresSafeArea(edges: .all)
 	}
 }
 struct MonthDayPicker: View {
