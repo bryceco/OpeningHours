@@ -14,7 +14,7 @@ class TagInfo : Codable {
 	init() {
 		self.restore()
 
-		var sentinel:String? = "Nov-Dec,Jan-Mar 05:30-23:30; Apr-Oct Mo-Sa 05:00-24:00; Apr-Oct Su 05:00-24:00"
+		var sentinel:String? = nil // Nov-Dec,Jan-Mar 05:30-23:30; Apr-Oct Mo-Sa 05:00-24:00; Apr-Oct Su 05:00-24:00"
 		#if false
 		repeat {
 			let v = OpenHours.init(fromString: sentinel!)
@@ -22,16 +22,16 @@ class TagInfo : Codable {
 		} while true
 		#endif
 
-		for value in self.values {
-			print("\(value)")
-			if value == sentinel {
-				sentinel = nil
-			} else {
+		for index in self.values.indices {
+			let value = self.values[index]
+
+			if sentinel != nil && value != sentinel! {
 				continue
 			}
+			sentinel = nil
 			let dayHours = OpenHours(fromString: value)
 			if dayHours.groups.count == 0 {
-				print(" ***")
+				print("\(value)")
 				_ = OpenHours(fromString: value)
 				continue
 			}
@@ -39,7 +39,7 @@ class TagInfo : Codable {
 			let unSpaced1 = value.replacingOccurrences(of: ";", with: ",").replacingOccurrences(of: ", ", with: ",")
 			let unSpaced2 = value.replacingOccurrences(of: ";", with: ",").replacingOccurrences(of: ", ", with: ",")
 			if unSpaced1 != unSpaced2 {
-				print("*** \(value) --> \(s)")
+				print("\(value) --> \(s)")
 				_ = OpenHours(fromString: value)
 				_ = dayHours.toString()
 			}

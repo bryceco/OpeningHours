@@ -43,6 +43,8 @@ enum Hour: Hashable, CustomStringConvertible {
 	case sunset
 	case closed
 	case off
+	case unknown
+	case comment(String)
 	case time(Int)
 
 	static func scan(scanner:Scanner) -> Hour?
@@ -67,6 +69,17 @@ enum Hour: Hashable, CustomStringConvertible {
 		if scanner.scanString("off") != nil {
 			return .off
 		}
+		if scanner.scanString("unknown") != nil {
+			return .unknown
+		}
+		let index = scanner.currentIndex
+		if scanner.scanString("\"") != nil {
+			if let s = scanner.scanUpToString("\"") {
+				_ = scanner.scanString("\"")
+				return .comment(s)
+			}
+			scanner.currentIndex = index
+		}
 		return nil
 	}
 
@@ -81,6 +94,10 @@ enum Hour: Hashable, CustomStringConvertible {
 			return "closed"
 		case .off:
 			return "off"
+		case .unknown:
+			return "unknown"
+		case let .comment(text):
+			return "\"\(text)\""
 		case let .time(time):
 			let hour = time/60
 			let minute = time%60
@@ -251,7 +268,9 @@ struct HourRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 		if let firstHour = Hour.scan(scanner: scanner) {
 			switch firstHour {
 			case .closed,
-				 .off:
+				 .off,
+				 .comment,
+				 .unknown:
 				return HourRange(begin: firstHour, end: firstHour)
 			default:
 				break
