@@ -36,33 +36,14 @@ func toString<T:Stringable>(list: [T], delimeter:String) -> String
 	return s
 }
 
-
-enum Hour: Hashable, CustomStringConvertible {
-
-	case sunrise
-	case sunset
+enum Modifier: Hashable, CustomStringConvertible {
 	case closed
 	case off
 	case unknown
 	case comment(String)
-	case time(Int)
 
-	static func scan(scanner:Scanner) -> Hour?
+	static func scan(scanner:Scanner) -> Modifier?
 	{
-		if let hour = scanner.scanInt(),
-			scanner.scanString(":") != nil,
-			let minute = scanner.scanInt()
-		{
-			return .time(hour*60+minute)
-		}
-		if scanner.scanString("sunrise") != nil ||
-			scanner.scanString("dawn") != nil {
-			return .sunrise
-		}
-		if scanner.scanString("sunset") != nil ||
-			scanner.scanString("dusk") != nil {
-			return .sunset
-		}
 		if scanner.scanString("closed") != nil {
 			return .closed
 		}
@@ -86,10 +67,6 @@ enum Hour: Hashable, CustomStringConvertible {
 	func toString() -> String
 	{
 		switch self {
-		case .sunrise:
-			return "sunrise"
-		case .sunset:
-			return "sunset"
 		case .closed:
 			return "closed"
 		case .off:
@@ -98,6 +75,46 @@ enum Hour: Hashable, CustomStringConvertible {
 			return "unknown"
 		case let .comment(text):
 			return "\"\(text)\""
+		}
+	}
+
+	var description: String {
+		return toString()
+	}
+}
+
+enum Hour: Hashable, CustomStringConvertible {
+
+	case sunrise
+	case sunset
+	case time(Int)
+
+	static func scan(scanner:Scanner) -> Hour?
+	{
+		if let hour = scanner.scanInt(),
+			scanner.scanString(":") != nil,
+			let minute = scanner.scanInt()
+		{
+			return .time(hour*60+minute)
+		}
+		if scanner.scanString("sunrise") != nil ||
+			scanner.scanString("dawn") != nil {
+			return .sunrise
+		}
+		if scanner.scanString("sunset") != nil ||
+			scanner.scanString("dusk") != nil {
+			return .sunset
+		}
+		return nil
+	}
+
+	func toString() -> String
+	{
+		switch self {
+		case .sunrise:
+			return "sunrise"
+		case .sunset:
+			return "sunset"
 		case let .time(time):
 			let hour = time/60
 			let minute = time%60
@@ -260,38 +277,27 @@ struct HourRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 
 	public var begin : Hour
 	public var end : Hour
+	public var modifier : Modifier?
 
 	static let defaultValue = HourRange(begin: Hour.time(10*60), end: Hour.time(18*60))
 
 	static func scan(scanner:Scanner) -> HourRange?
 	{
-		if let firstHour = Hour.scan(scanner: scanner) {
-			switch firstHour {
-			case .closed,
-				 .off,
-				 .comment,
-				 .unknown:
-				return HourRange(begin: firstHour, end: firstHour)
-			default:
-				break
-			}
-			if scanner.scanString("-") != nil {
-				if let lastHour = Hour.scan(scanner: scanner) {
-					return HourRange(begin: firstHour, end: lastHour)
-				}
-				return nil
-			}
-			return nil
+		let index = scanner.currentIndex
+		if let firstHour = Hour.scan(scanner: scanner),
+		   scanner.scanString("-") != nil,
+		   let lastHour = Hour.scan(scanner: scanner)
+		{
+			let modifier = Modifier.scan(scanner: scanner)
+			return HourRange(begin: firstHour, end: lastHour, modifier: modifier)
 		}
+		scanner.currentIndex = index
 		return nil
 	}
 
 	func toString() -> String
 	{
 		switch begin {
-		case .closed,
-			 .off:
-			return begin.toString()
 		default:
 			return "\(begin.toString())-\(end.toString())"
 		}
