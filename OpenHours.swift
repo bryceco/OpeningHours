@@ -26,14 +26,9 @@ func parseList<T:Scannable>(scanner:Scanner, delimiter:String) -> [T]?
 
 func toString<T:Stringable>(list: [T], delimeter:String) -> String
 {
-	var s = ""
-	for entry in list {
-		if s.count > 0 {
-			s += delimeter
-		}
-		s += entry.toString()
+	return list.reduce("") { result, next in
+		return result == "" ? next.toString() : result + delimeter + next.toString()
 	}
-	return s
 }
 
 enum Modifier: Hashable, CustomStringConvertible {
@@ -83,6 +78,7 @@ enum Modifier: Hashable, CustomStringConvertible {
 	}
 }
 
+// "05:30"
 enum Hour: Hashable, CustomStringConvertible {
 
 	case sunrise
@@ -160,6 +156,7 @@ enum Hour: Hashable, CustomStringConvertible {
 	}
 }
 
+// "Mo"
 enum Day: Int, CaseIterable {
 
 	case Mo
@@ -201,6 +198,7 @@ enum Day: Int, CaseIterable {
 	}
 }
 
+// "Jan"
 enum Month : Int, CaseIterable, CustomStringConvertible {
 	case Jan
 	case Feb
@@ -237,6 +235,7 @@ enum Month : Int, CaseIterable, CustomStringConvertible {
 	}
 }
 
+// "Jan" or "Jan 5"
 struct MonthDay: Hashable, CustomStringConvertible {
 	var month: Month
 	var day: Int?
@@ -273,6 +272,7 @@ struct MonthDay: Hashable, CustomStringConvertible {
 	}
 }
 
+// "5:30-10:30"
 struct HourRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 
 	public var begin : Hour
@@ -280,6 +280,7 @@ struct HourRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 	public var modifier : Modifier?
 
 	static let defaultValue = HourRange(begin: Hour.time(10*60), end: Hour.time(18*60))
+	static let allDay = HourRange(begin: Hour.time(0), end: Hour.time(24*60))
 
 	static func scan(scanner:Scanner) -> HourRange?
 	{
@@ -319,6 +320,7 @@ struct HourRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 	}
 }
 
+// "Mo-Fr"
 struct DayRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 	var begin: Day
 	var end: Day
@@ -351,10 +353,10 @@ struct DayRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 	}
 }
 
+// "Apr 5-10" or "Apr 3-May 22"
 struct MonthDayRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 	var begin: MonthDay
 	var end: MonthDay
-	let id = UUID()
 
 	static let defaultValue = MonthDayRange(begin: MonthDay(month: .Jan, day: nil), end: MonthDay(month: .Dec, day: nil))
 
@@ -393,15 +395,26 @@ struct MonthDayRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 	}
 }
 
-struct MonthDayHours: Scannable, Stringable, Hashable, CustomStringConvertible {
-
-	var months: [MonthDayRange]
+// "Mo-Fr 6:00-18:00, Sa,Su 6:00-12:00"
+struct DaysHours: Scannable, Stringable, Hashable {
 	var days : [DayRange]
 	var hours : [HourRange]
 
+	static func scan(scanner: Scanner) -> DaysHours?
+	{
+		let days : [DayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let hours : [HourRange] = parseList(scanner: scanner, delimiter: ",") ?? []
+		if days.count == 0 && hours.count == 0 {
+			return nil
+		}
+		return DaysHours(days: days, hours: hours)
+	}
+
+	static let defaultValue = DaysHours(days: [DayRange.defaultValue], hours: [HourRange.defaultValue])
+	static let hours_24_7 = DaysHours(days: [], hours: [HourRange.allDay])
+
 	func is24_7() -> Bool {
-		if months.count == 0,
-		   days.count == 0,
+		if days.count == 0,
 		   hours.count == 1,
 		   let hourRange = hours.first,
 		   hourRange.is24Hour()
@@ -409,6 +422,13 @@ struct MonthDayHours: Scannable, Stringable, Hashable, CustomStringConvertible {
 			return true
 		}
 		return false
+	}
+
+	mutating func addHoursRange() -> Void {
+		hours.append(HourRange.defaultValue)
+	}
+	mutating func deleteHoursRange(at index:Int) -> Void {
+		hours.remove(at: index)
 	}
 
 	func daySet() -> Set<Int> {
@@ -452,36 +472,50 @@ struct MonthDayHours: Scannable, Stringable, Hashable, CustomStringConvertible {
 		}
 		self.days = newrange
 	}
-	mutating func deleteMonthDayRange(at index:Int) -> Void {
-		months.remove(at: index)
+
+	func toString() -> String {
+		let s1 = OpeningHours.toString(list: days, delimeter: ",")
+		let s2 = OpeningHours.toString(list: hours, delimeter: ",")
+		return s1.count > 0 && s2.count > 0 ? s1+" "+s2 : s1+s2
 	}
-	mutating func deleteHoursRange(at index:Int) -> Void {
-		hours.remove(at: index)
+}
+
+// "Jan-Sep M-F 10:00-18:00"
+struct MonthsDaysHours: Scannable, Stringable, Hashable, CustomStringConvertible {
+
+	var months: [MonthDayRange]
+	var daysHours: [DaysHours]
+
+	func is24_7() -> Bool {
+		if months.count == 0,
+		   daysHours.count == 1,
+		   daysHours.first!.is24_7()
+		{
+			return true
+		}
+		return false
 	}
+
 	mutating func addMonthDayRange() -> Void {
 		months.append(MonthDayRange.defaultValue)
 	}
-	mutating func addHoursRange() -> Void {
-		hours.append(HourRange.defaultValue)
+	mutating func deleteMonthDayRange(at index:Int) -> Void {
+		months.remove(at: index)
 	}
-
+	mutating func addDaysHours() -> Void {
+		daysHours.append(DaysHours.defaultValue)
+	}
+	mutating func deleteDaysHours(at index:Int) -> Void {
+		daysHours.remove(at: index)
+	}
 
 	func toString() -> String {
 		if is24_7() {
 			return "24/7"
 		}
 		let s1 = OpeningHours.toString(list: months, delimeter: ",")
-		let s2 = OpeningHours.toString(list: days, delimeter: ",")
-		let s3 = OpeningHours.toString(list: hours, delimeter: ",")
-		var r = ""
-		for s in [s1, s2, s3] {
-			if s.count > 0 {
-				if r.count > 0 {
-					r += " "
-				}
-				r += s
-			}
-		}
+		let s2 = OpeningHours.toString(list: daysHours, delimeter: ", ")
+		let r = s1.count > 0 && s2.count > 0 ? s1+" "+s2 : s1+s2
 		return r
 	}
 
@@ -489,21 +523,20 @@ struct MonthDayHours: Scannable, Stringable, Hashable, CustomStringConvertible {
 		return toString()
 	}
 
-	static func scan(scanner:Scanner) -> MonthDayHours?
+	static func scan(scanner:Scanner) -> MonthsDaysHours?
 	{
 		let months : [MonthDayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
-		let days : [DayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
-		let hours : [HourRange] = parseList(scanner: scanner, delimiter: ",") ?? []
-		if months.count == 0 && days.count == 0 && hours.count == 0 {
+		let daysHours : [DaysHours] = parseList(scanner: scanner, delimiter: ",") ?? []
+		if months.count == 0 && daysHours.count == 0 {
 			return nil
 		}
-		return MonthDayHours(months: months, days: days, hours: hours)
+		return MonthsDaysHours(months: months, daysHours: daysHours)
 	}
 }
 
 class OpenHours: ObservableObject, CustomStringConvertible {
 
-	@Published var groups : [MonthDayHours]
+	@Published var groups : [MonthsDaysHours]
 	private var textual : String
 
 	var string: String {
@@ -528,19 +561,17 @@ class OpenHours: ObservableObject, CustomStringConvertible {
 		groups = OpenHours.parseString(text) ?? []
 	}
 
-	static func parseString(_ text:String) -> [MonthDayHours]? {
+	static func parseString(_ text:String) -> [MonthsDaysHours]? {
 		let scanner = Scanner(string: text)
 		scanner.caseSensitive = true
 		scanner.charactersToBeSkipped = CharacterSet.whitespaces
 
 		if scanner.scanString("24/7") != nil {
 			if scanner.isAtEnd {
-				return [MonthDayHours(months: [],
-									  days: [],
-									  hours: [HourRange(begin: Hour.time(0), end: Hour.time(24*60))])]
+				return [MonthsDaysHours(months: [], daysHours: [DaysHours.hours_24_7])]
 			}
 		}
-		guard let result : [MonthDayHours] = parseList(scanner: scanner, delimiter: ";") else { return nil }
+		guard let result : [MonthsDaysHours] = parseList(scanner: scanner, delimiter: ";") else { return nil }
 		if !scanner.isAtEnd {
 			return nil
 		}
@@ -554,7 +585,9 @@ class OpenHours: ObservableObject, CustomStringConvertible {
 		}
 	}
 	func addMonthDayHours() -> Void {
-		groups.append(MonthDayHours(months: [], days: [DayRange.defaultValue], hours: [HourRange.defaultValue]))
+		groups.append(MonthsDaysHours(months: [],
+									daysHours: [DaysHours(days: [DayRange.defaultValue],
+														  hours: [HourRange.defaultValue])]))
 	}
 
 
