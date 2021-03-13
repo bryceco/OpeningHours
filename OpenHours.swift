@@ -18,9 +18,13 @@ extension Scanner {
 	func scanWord(_ text:String) -> String? {
 		let currentIndex = self.currentIndex
 		if let _ = scanString(text) {
+			let skipped = self.charactersToBeSkipped
+			self.charactersToBeSkipped = nil
 			if scanCharacters(from: CharacterSet.letters) == nil {
+				self.charactersToBeSkipped = skipped
 				return text
 			}
+			self.charactersToBeSkipped = skipped
 			self.currentIndex = currentIndex
 		}
 		return nil
