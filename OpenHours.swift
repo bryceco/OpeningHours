@@ -17,9 +17,23 @@ protocol Stringable {
 func parseList<T:Scannable>(scanner:Scanner, delimiter:String) -> [T]?
 {
 	var list = [T]()
+	var commaIndex: String.Index? = nil
 	repeat {
+		if T.self == HourRange.self,
+			let commaIndex = commaIndex
+		{
+			// hack because grammar is poorly defined
+			let currentIndex = scanner.currentIndex
+			if scanner.scanInt() == nil {
+				// next item isn't a time, so exit out to parse a day
+				scanner.currentIndex = commaIndex
+				return list
+			}
+			scanner.currentIndex = currentIndex
+		}
 		guard let hoursRange = T.scan(scanner:scanner) else { return nil }
 		list.append(hoursRange)
+		commaIndex = scanner.currentIndex
 	} while scanner.scanString(delimiter) != nil
 	return list
 }
@@ -284,6 +298,11 @@ struct HourRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 
 	static func scan(scanner:Scanner) -> HourRange?
 	{
+		if let modifier = Modifier.scan(scanner: scanner) {
+			// Sa-Su "closed"
+			return HourRange(begin: Hour.time(0), end: Hour.time(0), modifier: modifier)
+		}
+
 		let index = scanner.currentIndex
 		if let firstHour = Hour.scan(scanner: scanner),
 		   scanner.scanString("-") != nil,
@@ -580,7 +599,7 @@ class OpenHours: ObservableObject, CustomStringConvertible {
 
 	static func parseString(_ text:String) -> [MonthsDaysHours]? {
 		let scanner = Scanner(string: text)
-		scanner.caseSensitive = true
+		scanner.caseSensitive = false
 		scanner.charactersToBeSkipped = CharacterSet.whitespaces
 
 		if scanner.scanString("24/7") != nil {
