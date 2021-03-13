@@ -157,6 +157,7 @@ struct MonthsView: View {
 					let dayHoursIndex = openHours.groups.firstIndex(of: group)!
 					openHours.groups[dayHoursIndex].addMonthDayRange()
 				})
+				.padding( [.top,.bottom], 10.0 )
 			}
 		}
 	}
@@ -193,7 +194,7 @@ struct DaysOfWeekView: View {
 				}
 			}
 			Spacer()
-			if group.months.count == 0 && daysHours.hours.count == 0 {
+			if daysHours.hours.count == 0 {
 				TrashButton() {
 					let dayHoursIndex = openHours.groups.firstIndex(of: group)!
 					openHours.deleteMonthDayHours(at: dayHoursIndex)
@@ -252,6 +253,7 @@ struct HoursView: View {
 				Button("More hours", action: {
 					openHours.groups[groupIndex].daysHours[daysHoursIndex].addHoursRange()
 				})
+				.padding()
 			}
 		}
 	}
@@ -310,7 +312,7 @@ struct ContentView: View {
 				.padding()
 			}
 			.padding()
-			Button("More days", action: {
+			Button("More ranges", action: {
 				dateRanges.addMonthDayHours()
 			})
 		}

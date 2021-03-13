@@ -400,6 +400,8 @@ struct DaysHours: Scannable, Stringable, Hashable {
 	var days : [DayRange]
 	var hours : [HourRange]
 
+	static let everyDay:Set<Int> = [0,1,2,3,4,5,6]
+
 	static func scan(scanner: Scanner) -> DaysHours?
 	{
 		let days : [DayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
@@ -441,22 +443,7 @@ struct DaysHours: Scannable, Stringable, Hashable {
 		return set
 	}
 
-	mutating func toggleDay(day:Int) -> Void {
-		let everyDay:Set<Int> = [0,1,2,3,4,5,6]
-		var set = daySet()
-
-		if set.isEmpty {
-			set = everyDay
-		}
-		if set.contains(day) {
-			set.remove(day)
-		} else {
-			set.insert(day)
-		}
-		if set == everyDay {
-			self.days = []
-			return
-		}
+	static func dayRangesForDaySet( _ set: Set<Int> ) -> [DayRange] {
 		var newrange = [DayRange]()
 		for d in 0..<7 {
 			if set.contains(d) {
@@ -470,7 +457,25 @@ struct DaysHours: Scannable, Stringable, Hashable {
 				}
 			}
 		}
-		self.days = newrange
+		return newrange
+	}
+
+	mutating func toggleDay(day:Int) -> Void {
+		var set = daySet()
+
+		if set.isEmpty {
+			set = DaysHours.everyDay
+		}
+		if set.contains(day) {
+			set.remove(day)
+		} else {
+			set.insert(day)
+		}
+		if set == DaysHours.everyDay {
+			self.days = []
+			return
+		}
+		self.days = DaysHours.dayRangesForDaySet(set)
 	}
 
 	func toString() -> String {
@@ -496,6 +501,12 @@ struct MonthsDaysHours: Scannable, Stringable, Hashable, CustomStringConvertible
 		return false
 	}
 
+	func definedDays() -> Set<Int> {
+		return daysHours.reduce(Set<Int>()) { result, dayHours in
+			return result.union(dayHours.daySet())
+		}
+	}
+
 	mutating func addMonthDayRange() -> Void {
 		months.append(MonthDayRange.defaultValue)
 	}
@@ -503,7 +514,13 @@ struct MonthsDaysHours: Scannable, Stringable, Hashable, CustomStringConvertible
 		months.remove(at: index)
 	}
 	mutating func addDaysHours() -> Void {
-		daysHours.append(DaysHours.defaultValue)
+		let days = definedDays()
+		var dh = DaysHours.defaultValue
+		if days.count > 0 {
+			let set = DaysHours.everyDay.subtracting(days)
+			dh.days = DaysHours.dayRangesForDaySet( set )
+		}
+		daysHours.append(dh)
 	}
 	mutating func deleteDaysHours(at index:Int) -> Void {
 		daysHours.remove(at: index)
