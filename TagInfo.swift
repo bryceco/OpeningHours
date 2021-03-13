@@ -14,10 +14,9 @@ class TagInfo : Codable {
 	init() {
 		self.restore()
 
-		var sentinel:String? = nil // Nov-Dec,Jan-Mar 05:30-23:30; Apr-Oct Mo-Sa 05:00-24:00; Apr-Oct Su 05:00-24:00"
 		#if false
 		repeat {
-			let s = "Mo-Sa 09:00-12:00, Mo-Fr 14:30-17:30"
+			let s = "sunrise-sunset"
 			let v = OpenHours.init(fromString: s)
 			print("\"\(v.toString())\"")
 		} while true
@@ -26,10 +25,6 @@ class TagInfo : Codable {
 		for index in self.values.indices {
 			let value = self.values[index]
 
-			if sentinel != nil && value != sentinel! {
-				continue
-			}
-			sentinel = nil
 			let dayHours = OpenHours(fromString: value)
 			if dayHours.groups.count == 0 {
 				print("\(index): \(value)")

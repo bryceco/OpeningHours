@@ -14,6 +14,19 @@ protocol Stringable {
 	func toString() -> String
 }
 
+extension Scanner {
+	func scanWord(_ text:String) -> String? {
+		let currentIndex = self.currentIndex
+		if let _ = scanString(text) {
+			if scanCharacters(from: CharacterSet.letters) == nil {
+				return text
+			}
+			self.currentIndex = currentIndex
+		}
+		return nil
+	}
+}
+
 func parseList<T:Scannable>(scanner:Scanner, delimiter:String) -> [T]?
 {
 	var list = [T]()
@@ -53,13 +66,13 @@ enum Modifier: Hashable, CustomStringConvertible {
 
 	static func scan(scanner:Scanner) -> Modifier?
 	{
-		if scanner.scanString("closed") != nil {
+		if scanner.scanWord("closed") != nil {
 			return .closed
 		}
-		if scanner.scanString("off") != nil {
+		if scanner.scanWord("off") != nil {
 			return .off
 		}
-		if scanner.scanString("unknown") != nil {
+		if scanner.scanWord("unknown") != nil {
 			return .unknown
 		}
 		let index = scanner.currentIndex
@@ -107,12 +120,12 @@ enum Hour: Hashable, CustomStringConvertible {
 		{
 			return .time(hour*60+minute)
 		}
-		if scanner.scanString("sunrise") != nil ||
-			scanner.scanString("dawn") != nil {
+		if scanner.scanWord("sunrise") != nil ||
+			scanner.scanWord("dawn") != nil {
 			return .sunrise
 		}
-		if scanner.scanString("sunset") != nil ||
-			scanner.scanString("dusk") != nil {
+		if scanner.scanWord("sunset") != nil ||
+			scanner.scanWord("dusk") != nil {
 			return .sunset
 		}
 		return nil
@@ -186,7 +199,7 @@ enum Day: Int, CaseIterable {
 	static func scan(scanner:Scanner) -> Day?
 	{
 		for day in Day.allCases {
-			if scanner.scanString(day.toString()) != nil {
+			if scanner.scanWord(day.toString()) != nil {
 				return day
 			}
 		}
@@ -240,7 +253,7 @@ enum Month : Int, CaseIterable, CustomStringConvertible {
 	static func scan(scanner:Scanner) -> Month?
 	{
 		for month in Month.allCases {
-			if scanner.scanString(month.toString()) != nil {
+			if scanner.scanWord(month.toString()) != nil {
 				return month
 			}
 		}
