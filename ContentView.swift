@@ -127,50 +127,44 @@ struct MonthDayPickerButton: View {
 }
 
 struct MonthsView: View {
-	@ObservedObject var openHours: OpenHours
-	var group : MonthsDaysHours
+	@Binding var monthsList: [MonthDayRange]
 
 	var body: some View {
-		if let groupIndex = openHours.groups.firstIndex(of: group) {
 
-			VStack {
-				ForEach(openHours.groups[groupIndex].months.indices, id:\.self) { monthIndex in
-					SafeBinding($openHours.groups[groupIndex].months, index:monthIndex) { month in
-						HStack {
-							Spacer()
-							MonthDayPickerButton(binding: month.begin)
-								.font(.title)
-							Text("-")
-							MonthDayPickerButton(binding: month.end)
-								.font(.title)
-							Spacer()
-							TrashButton() {
-								let dayHoursIndex = openHours.groups.firstIndex(of: group)!
-								let monthIndex = openHours.groups[dayHoursIndex].months.firstIndex(of: month.wrappedValue)!
-								openHours.groups[dayHoursIndex].deleteMonthDayRange(at:monthIndex)
-							}
+		VStack {
+			ForEach(monthsList.indices, id:\.self) { monthIndex in
+				SafeBinding($monthsList, index:monthIndex) { month in
+					HStack {
+						Spacer()
+						MonthDayPickerButton(binding: month.begin)
+							.font(.title)
+						Text("-")
+						MonthDayPickerButton(binding: month.end)
+							.font(.title)
+						Spacer()
+						TrashButton() {
+							monthsList.remove(at: monthIndex)
 						}
 					}
 				}
-				Spacer()
-				Button("More months", action: {
-					let dayHoursIndex = openHours.groups.firstIndex(of: group)!
-					openHours.groups[dayHoursIndex].addMonthDayRange()
-				})
-				.padding( [.top,.bottom], 10.0 )
 			}
+			Spacer()
+			Button("More months", action: {
+				monthsList.append(MonthDayRange.defaultValue)
+			})
+			.padding( [.top,.bottom], 10.0 )
 		}
 	}
 }
 
 struct DaysOfWeekRowView: View {
-	@ObservedObject var openHours: OpenHours
-	var group: MonthsDaysHours
-	var daysHours: DaysHours
+	@Binding var daysHoursList: [DaysHours]
+	@Binding var daysHours: DaysHours
 
 	let days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
 
 	var body: some View {
+
 		// days
 		HStack {
 			Spacer()
@@ -179,9 +173,7 @@ struct DaysOfWeekRowView: View {
 					Text(days[day])
 						.font(.footnote)
 					Button(action: {
-						let groupIndex = openHours.groups.firstIndex(of: group)!
-						let daysHoursIndex = group.daysHours.firstIndex(of: daysHours)!
-						openHours.groups[groupIndex].daysHours[daysHoursIndex].toggleDay(day:day)
+						daysHours.toggleDay(day:day)
 					})
 					{
 						Image(systemName: "checkmark")
@@ -194,11 +186,10 @@ struct DaysOfWeekRowView: View {
 				}
 			}
 			Spacer()
-			if daysHours.hours.count == 0 && group.daysHours.count > 1 {
+			if daysHours.hours.count == 0 && daysHoursList.count > 1 {
 				TrashButton() {
-					let groupIndex = openHours.groups.firstIndex(of: group)!
-					let daysHoursIndex = group.daysHours.firstIndex(of: daysHours)!
-					openHours.groups[groupIndex].daysHours.remove(at: daysHoursIndex)
+					let index = daysHoursList.firstIndex(of: daysHours)!
+					daysHoursList.remove(at: index)
 				}
 			}
 		}
@@ -232,67 +223,75 @@ struct HoursRowView: View {
 }
 
 struct HoursView: View {
-	@ObservedObject var openHours: OpenHours
-	var group: MonthsDaysHours
-	var daysHours: DaysHours
+	@Binding var daysHours: DaysHours
 
 	var body: some View {
 
-		if let groupIndex = openHours.groups.firstIndex(of: group),
-		   let daysHoursIndex = group.daysHours.firstIndex(of: daysHours)
-		{
-			VStack {
-				ForEach(daysHours.hours.indices, id:\.self) { hoursIndex in
-					SafeBinding($openHours.groups[groupIndex].daysHours[daysHoursIndex].hours, index: hoursIndex) { binding in
-						HoursRowView(date1: binding.begin.asDate,
-									 date2: binding.end.asDate,
-									 deleteAction: {
-										openHours.groups[groupIndex].daysHours[daysHoursIndex].deleteHoursRange(at: hoursIndex)
-									 })
-					}
+		VStack {
+			ForEach(daysHours.hours.indices, id:\.self) { hoursIndex in
+				SafeBinding($daysHours.hours, index: hoursIndex) { binding in
+					HoursRowView(date1: binding.begin.asDate,
+								 date2: binding.end.asDate,
+								 deleteAction: {
+									daysHours.deleteHoursRange(at: hoursIndex)
+								 })
 				}
-				Button("More hours", action: {
-					openHours.groups[groupIndex].daysHours[daysHoursIndex].addHoursRange()
-				})
-				.padding()
 			}
+			Button("More hours", action: {
+				daysHours.addHoursRange()
+			})
+			.padding()
 		}
 	}
 }
 
 struct DaysHoursView: View {
-	@ObservedObject var openHours: OpenHours
-	var group: MonthsDaysHours
+	@Binding var groupList: [MonthsDaysHours]
+	@Binding var group: MonthsDaysHours
 
 	var body: some View {
 
-		if let groupIndex = openHours.groups.firstIndex(of: group) {
+		VStack {
+			ForEach(group.daysHours.indices, id:\.self) { daysHoursIndex in
 
-			VStack {
-				ForEach(group.daysHours.indices, id:\.self) { daysHoursIndex in
+				SafeBinding($group.daysHours, index: daysHoursIndex) { binding in
+					HStack {
+						DaysOfWeekRowView(daysHoursList: $group.daysHours, daysHours: binding)
 
-					SafeBinding($openHours.groups[groupIndex].daysHours, index: daysHoursIndex) { binding in
-						HStack {
-							DaysOfWeekRowView(openHours: openHours, group: group, daysHours: binding.wrappedValue )
-
-							if binding.wrappedValue.hours.count == 0 && group.months.count == 0 {
-								TrashButton() {
-									let dayHoursIndex = openHours.groups.firstIndex(of: group)!
-									openHours.deleteMonthDayHours(at: dayHoursIndex)
-								}
+						if binding.wrappedValue.hours.count == 0 && group.months.count == 0 {
+							TrashButton() {
+								groupList.remove(at: daysHoursIndex)
 							}
 						}
-
-						HoursView(openHours: openHours, group: group, daysHours: binding.wrappedValue)
 					}
+
+					HoursView(daysHours: binding)
 				}
-				Button("More days/hours", action: {
-					openHours.groups[groupIndex].addDaysHours()
-				})
 			}
+			Button("More days/hours", action: {
+				group.addDaysHours()
+			})
 		}
 	}
 }
+
+struct MonthsDaysHoursView: View {
+	@Binding var groupList: [MonthsDaysHours]
+	@Binding var group: MonthsDaysHours
+
+	var body: some View {
+		VStack {
+			// months
+			MonthsView(monthsList: $group.months)
+			Spacer()
+
+			// days/hours
+			DaysHoursView(groupList: $groupList, group: $group)
+		}
+		.padding()
+	}
+}
+
 
 struct ContentView: View {
 
@@ -310,16 +309,11 @@ struct ContentView: View {
 		ScrollView {
 			TextField("opening_hours", value: $dateRanges.string, formatter: formatter)
 				.textFieldStyle(RoundedBorderTextFieldStyle())
-			ForEach(dateRanges.groups, id: \.self) { group in
-				VStack {
-					// months
-					MonthsView(openHours: dateRanges, group: group)
-					Spacer()
-
-					// days/hours
-					DaysHoursView(openHours: dateRanges, group: group)
+			ForEach(dateRanges.groups.indices, id: \.self) { groupIndex in
+				SafeBinding($dateRanges.groups, index: groupIndex) { group in
+					MonthsDaysHoursView(groupList: $dateRanges.groups, group: group)
+					.padding()
 				}
-				.padding()
 			}
 			.padding()
 			Button("More ranges", action: {
