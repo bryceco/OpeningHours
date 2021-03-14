@@ -111,7 +111,7 @@ struct MonthDayPickerModal: View {
 		.ignoresSafeArea(edges: .all)
 	}
 }
-struct MonthDayPicker: View {
+struct MonthDayPickerButton: View {
 	@Binding var binding : MonthDay
 
 	@State private var showModalView: Bool = false
@@ -138,10 +138,10 @@ struct MonthsView: View {
 					SafeBinding($openHours.groups[groupIndex].months, index:monthIndex) { month in
 						HStack {
 							Spacer()
-							MonthDayPicker(binding: month.begin)
+							MonthDayPickerButton(binding: month.begin)
 								.font(.title)
 							Text("-")
-							MonthDayPicker(binding: month.end)
+							MonthDayPickerButton(binding: month.end)
 								.font(.title)
 							Spacer()
 							TrashButton() {
@@ -163,7 +163,7 @@ struct MonthsView: View {
 	}
 }
 
-struct DaysOfWeekView: View {
+struct DaysOfWeekRowView: View {
 	@ObservedObject var openHours: OpenHours
 	var group: MonthsDaysHours
 	var daysHours: DaysHours
@@ -279,7 +279,7 @@ struct DaysHoursView: View {
 				ForEach(group.daysHours.indices, id:\.self) { daysHoursIndex in
 
 					SafeBinding($openHours.groups[groupIndex].daysHours, index: daysHoursIndex) { binding in
-						DaysOfWeekView(openHours: openHours, group: group, daysHours: binding.wrappedValue )
+						DaysOfWeekRowView(openHours: openHours, group: group, daysHours: binding.wrappedValue )
 
 						HoursView(openHours: openHours, group: group, daysHours: binding.wrappedValue)
 					}
