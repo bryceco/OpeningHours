@@ -334,10 +334,7 @@ struct HourRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 
 	func toString() -> String
 	{
-		switch begin {
-		default:
-			return "\(begin.toString())-\(end.toString())"
-		}
+		return "\(begin.toString())-\(end.toString())"
 	}
 
 	var description: String {
