@@ -194,18 +194,11 @@ struct DaysOfWeekRowView: View {
 				}
 			}
 			Spacer()
-			if daysHours.hours.count == 0 {
-				if group.daysHours.count > 1 {
-					TrashButton() {
-						let groupIndex = openHours.groups.firstIndex(of: group)!
-						let daysHoursIndex = group.daysHours.firstIndex(of: daysHours)!
-						openHours.groups[groupIndex].daysHours.remove(at: daysHoursIndex)
-					}
-				} else if group.months.count == 0 {
-					TrashButton() {
-						let dayHoursIndex = openHours.groups.firstIndex(of: group)!
-						openHours.deleteMonthDayHours(at: dayHoursIndex)
-					}
+			if daysHours.hours.count == 0 && group.daysHours.count > 1 {
+				TrashButton() {
+					let groupIndex = openHours.groups.firstIndex(of: group)!
+					let daysHoursIndex = group.daysHours.firstIndex(of: daysHours)!
+					openHours.groups[groupIndex].daysHours.remove(at: daysHoursIndex)
 				}
 			}
 		}
@@ -279,7 +272,16 @@ struct DaysHoursView: View {
 				ForEach(group.daysHours.indices, id:\.self) { daysHoursIndex in
 
 					SafeBinding($openHours.groups[groupIndex].daysHours, index: daysHoursIndex) { binding in
-						DaysOfWeekRowView(openHours: openHours, group: group, daysHours: binding.wrappedValue )
+						HStack {
+							DaysOfWeekRowView(openHours: openHours, group: group, daysHours: binding.wrappedValue )
+
+							if binding.wrappedValue.hours.count == 0 && group.months.count == 0 {
+								TrashButton() {
+									let dayHoursIndex = openHours.groups.firstIndex(of: group)!
+									openHours.deleteMonthDayHours(at: dayHoursIndex)
+								}
+							}
+						}
 
 						HoursView(openHours: openHours, group: group, daysHours: binding.wrappedValue)
 					}
