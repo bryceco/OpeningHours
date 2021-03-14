@@ -258,9 +258,9 @@ struct DaysHoursView: View {
 					HStack {
 						DaysOfWeekRowView(daysHoursList: $group.daysHours, daysHours: binding)
 
-						if binding.wrappedValue.hours.count == 0 && group.months.count == 0 {
+						if binding.wrappedValue.hours.count == 0 && group.months.count == 0 && group.daysHours.count == 1 {
 							TrashButton() {
-								groupList.remove(at: daysHoursIndex)
+								groupList.removeAll(where: { $0 == group })
 							}
 						}
 					}
