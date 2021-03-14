@@ -195,9 +195,17 @@ struct DaysOfWeekView: View {
 			}
 			Spacer()
 			if daysHours.hours.count == 0 {
-				TrashButton() {
-					let dayHoursIndex = openHours.groups.firstIndex(of: group)!
-					openHours.deleteMonthDayHours(at: dayHoursIndex)
+				if group.daysHours.count > 1 {
+					TrashButton() {
+						let groupIndex = openHours.groups.firstIndex(of: group)!
+						let daysHoursIndex = group.daysHours.firstIndex(of: daysHours)!
+						openHours.groups[groupIndex].daysHours.remove(at: daysHoursIndex)
+					}
+				} else if group.months.count == 0 {
+					TrashButton() {
+						let dayHoursIndex = openHours.groups.firstIndex(of: group)!
+						openHours.deleteMonthDayHours(at: dayHoursIndex)
+					}
 				}
 			}
 		}
