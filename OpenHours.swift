@@ -60,11 +60,31 @@ func toString<T:ParseElement>(list: [T], delimeter:String) -> String
 	}
 }
 
+struct Comment: ParseElement {
+	var text: String
+	static func scan(scanner: Scanner) -> Comment? {
+		let index = scanner.currentIndex
+		if scanner.scanString("\"") != nil {
+			if let s = scanner.scanUpToString("\"") {
+				_ = scanner.scanString("\"")
+				return Comment(text: s)
+			}
+			scanner.currentIndex = index
+		}
+		return nil
+	}
+	func toString() -> String {
+		return "\"\(text)\""
+	}
+	var description: String{
+		return toString()
+	}
+}
+
 enum Modifier: ParseElement {
 	case closed
 	case off
 	case unknown
-	case comment(String)
 
 	static func scan(scanner:Scanner) -> Modifier?
 	{
@@ -76,14 +96,6 @@ enum Modifier: ParseElement {
 		}
 		if scanner.scanWord("unknown") != nil {
 			return .unknown
-		}
-		let index = scanner.currentIndex
-		if scanner.scanString("\"") != nil {
-			if let s = scanner.scanUpToString("\"") {
-				_ = scanner.scanString("\"")
-				return .comment(s)
-			}
-			scanner.currentIndex = index
 		}
 		return nil
 	}
@@ -97,8 +109,6 @@ enum Modifier: ParseElement {
 			return "off"
 		case .unknown:
 			return "unknown"
-		case let .comment(text):
-			return "\"\(text)\""
 		}
 	}
 
@@ -331,24 +341,29 @@ struct HourRange: ParseElement {
 	public var begin : Hour
 	public var end : Hour
 	public var modifier : Modifier?
+	public var comment : Comment?
 
 	static let defaultValue = HourRange(begin: Hour.time(10*60), end: Hour.time(18*60))
 	static let allDay = HourRange(begin: Hour.time(0), end: Hour.time(24*60))
 
 	static func scan(scanner:Scanner) -> HourRange?
 	{
-		if let modifier = Modifier.scan(scanner: scanner) {
-			// Sa-Su "closed"
-			return HourRange(begin: Hour.time(0), end: Hour.time(0), modifier: modifier)
-		}
-
 		let index = scanner.currentIndex
+
+		var range: (Hour,Hour)? = nil
 		if let firstHour = Hour.scan(scanner: scanner),
 		   scanner.scanString("-") != nil,
 		   let lastHour = Hour.scan(scanner: scanner)
 		{
-			let modifier = Modifier.scan(scanner: scanner)
-			return HourRange(begin: firstHour, end: lastHour, modifier: modifier)
+			range = (firstHour,lastHour)
+		}
+
+		let modifier = Modifier.scan(scanner: scanner)
+		let comment = Comment.scan(scanner: scanner)
+
+		if range != nil || modifier != nil || comment != nil {
+			let hours = range ?? (Hour.time(0), Hour.time(0))
+			return HourRange(begin: hours.0, end: hours.1, modifier: modifier, comment: comment)
 		}
 		scanner.currentIndex = index
 		return nil
@@ -468,7 +483,10 @@ struct DaysHours: ParseElement {
 
 	static func scan(scanner: Scanner) -> DaysHours?
 	{
-		let days : [DayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
+		// need to parse days twice, because spaces are allowed to seperate ranges of days/holidays
+		let days1 : [DayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let days2 : [DayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let days = days1 + days2
 		let hours : [HourRange] = parseList(scanner: scanner, delimiter: ",") ?? []
 		if days.count == 0 && hours.count == 0 {
 			return nil
@@ -497,7 +515,7 @@ struct DaysHours: ParseElement {
 		hours.remove(at: index)
 	}
 
-	func daySet() -> Set<Int> {
+	func weekdaysSet() -> Set<Int> {
 		var set = Set<Int>()
 		for dayRange in days {
 			switch dayRange {
@@ -512,7 +530,20 @@ struct DaysHours: ParseElement {
 		return set
 	}
 
-	static func dayRangesForDaySet( _ set: Set<Int> ) -> [DayRange] {
+	func holidaysSet() -> Set<Holiday> {
+		var set = Set<Holiday>()
+		for day in days {
+			switch day {
+				case .weekdays:
+					break
+				case let .holiday(holiday):
+					set.insert(holiday)
+			}
+		}
+		return set
+	}
+
+	static func dayRangesForWeekdaysSet( _ set: Set<Int> ) -> [DayRange] {
 		var newrange = [DayRange]()
 		var range: (Day,Day)? = nil
 
@@ -540,7 +571,7 @@ struct DaysHours: ParseElement {
 	}
 
 	mutating func toggleDay(day:Int) -> Void {
-		var set = daySet()
+		var set = weekdaysSet()
 
 		if set.isEmpty {
 			set = DaysHours.everyDay
@@ -554,7 +585,7 @@ struct DaysHours: ParseElement {
 			self.days = []
 			return
 		}
-		self.days = DaysHours.dayRangesForDaySet(set)
+		self.days = DaysHours.dayRangesForWeekdaysSet(set)
 	}
 
 	func toString() -> String {
@@ -585,7 +616,7 @@ struct MonthsDaysHours: ParseElement {
 
 	func definedDays() -> Set<Int> {
 		return daysHours.reduce(Set<Int>()) { result, dayHours in
-			return result.union(dayHours.daySet())
+			return result.union(dayHours.weekdaysSet())
 		}
 	}
 
@@ -600,7 +631,7 @@ struct MonthsDaysHours: ParseElement {
 		var dh = DaysHours.defaultValue
 		if days.count > 0 {
 			let set = DaysHours.everyDay.subtracting(days)
-			dh.days = DaysHours.dayRangesForDaySet( set )
+			dh.days = DaysHours.dayRangesForWeekdaysSet( set )
 		}
 		daysHours.append(dh)
 	}

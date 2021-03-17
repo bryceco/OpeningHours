@@ -43,16 +43,16 @@
 		02FF27D925F05BCD001B4910 = {
 			isa = PBXGroup;
 			children = (
-				020845062602A43200747D9F /* Grammar.swift */,
-				02FF280025F07469001B4910 /* OpeningHours.entitlements */,
-				02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */,
-				02FF27E025F05BCD001B4910 /* ContentView.swift */,
 				02FF27E125F05BCE001B4910 /* Assets.xcassets */,
-				02FF280125F2B94A001B4910 /* TagInfo.swift */,
+				02FF27E025F05BCD001B4910 /* ContentView.swift */,
+				020845062602A43200747D9F /* Grammar.swift */,
+				02FF27E925F05BCE001B4910 /* Info.plist */,
 				02FF280725F2CAC7001B4910 /* OpenHours.swift */,
 				022A1E2825F4A85300810DDE /* opening_hours.json */,
-				02FF27E925F05BCE001B4910 /* Info.plist */,
+				02FF280025F07469001B4910 /* OpeningHours.entitlements */,
+				02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */,
 				02FF27E725F05BCE001B4910 /* Products */,
+				02FF280125F2B94A001B4910 /* TagInfo.swift */,
 			);
 			sourceTree = "<group>";
 		};

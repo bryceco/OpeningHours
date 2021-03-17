@@ -178,7 +178,7 @@ struct DaysOfWeekRowView: View {
 					{
 						Image(systemName: "checkmark")
 							.padding(4)
-							.background(daysHours.daySet().count == 0 || daysHours.daySet().contains(day) ? Color.blue : Color.gray.opacity(0.2))
+							.background(daysHours.weekdaysSet().count == 0 || daysHours.weekdaysSet().contains(day) ? Color.blue : Color.gray.opacity(0.2))
 							.clipShape(Circle())
 							.font(.footnote)
 							.foregroundColor(.white)
