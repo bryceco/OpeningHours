@@ -375,32 +375,40 @@ struct HourRange: ParseElement {
 	}
 }
 
-// "Mo-Fr"
-struct DayRange: ParseElement {
-	var begin: Day
-	var end: Day
+// "Mo-Fr" or "PH"
+enum DayRange: ParseElement {
+	case holiday(Holiday)
+	case weekdays(Day,Day)
 
-	static let defaultValue = DayRange(begin: .Mo, end: .Su)
+	static let defaultValue = DayRange.weekdays(.Mo, .Su)
 
 	static func scan(scanner:Scanner) -> DayRange?
 	{
+		if let holiday = Holiday.scan(scanner: scanner) {
+			return DayRange.holiday(holiday)
+		}
 		if let firstDay = Day.scan(scanner: scanner) {
 			if scanner.scanString("-") != nil {
 				if let lastDay = Day.scan(scanner: scanner) {
-					return DayRange(begin: firstDay, end: lastDay)
+					return DayRange.weekdays(firstDay, lastDay)
 				}
 				return nil
 			}
-			return DayRange(begin: firstDay, end: firstDay)
+			return DayRange.weekdays(firstDay, firstDay)
 		}
 		return nil
 	}
 
 	func toString() -> String {
-		if begin == end {
-			return "\(begin)"
-		} else {
-			return "\(begin)-\(end)"
+		switch self {
+		case let .holiday(holiday):
+			return holiday.toString()
+		case let .weekdays(begin, end):
+			if begin == end {
+				return "\(begin)"
+			} else {
+				return "\(begin)-\(end)"
+			}
 		}
 	}
 	var description: String {
@@ -492,8 +500,13 @@ struct DaysHours: ParseElement {
 	func daySet() -> Set<Int> {
 		var set = Set<Int>()
 		for dayRange in days {
-			for day in dayRange.begin.rawValue...dayRange.end.rawValue {
-				set.insert(day)
+			switch dayRange {
+				case let .weekdays(begin, end):
+					for day in begin.rawValue...end.rawValue {
+						set.insert(day)
+					}
+				case .holiday:
+					break
 			}
 		}
 		return set
@@ -501,17 +514,27 @@ struct DaysHours: ParseElement {
 
 	static func dayRangesForDaySet( _ set: Set<Int> ) -> [DayRange] {
 		var newrange = [DayRange]()
+		var range: (Day,Day)? = nil
+
 		for d in 0..<7 {
 			if set.contains(d) {
 				let day = Day(rawValue: d)!
-				if newrange.last?.end.rawValue == d-1 {
+				if let (begin,end) = range,
+				   end.rawValue+1 == d
+				{
 					// extends last range
-					newrange[newrange.count-1].end = day
+					range = (begin,day)
 				} else {
 					// start a new range
-					newrange.append(DayRange(begin: day, end: day))
+					if let (begin,end) = range {
+						newrange.append(DayRange.weekdays(begin,end))
+					}
+					range = (day,day)
 				}
 			}
+		}
+		if let (begin,end) = range {
+			newrange.append(DayRange.weekdays(begin,end))
 		}
 		return newrange
 	}
