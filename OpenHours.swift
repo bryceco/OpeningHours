@@ -7,10 +7,8 @@
 
 import Foundation
 
-protocol Scannable {
+protocol ParseElement : Hashable, CustomStringConvertible {
 	static func scan(scanner: Scanner) -> Self?
-}
-protocol Stringable {
 	func toString() -> String
 }
 
@@ -31,7 +29,7 @@ extension Scanner {
 	}
 }
 
-func parseList<T:Scannable>(scanner:Scanner, delimiter:String) -> [T]?
+func parseList<T:ParseElement>(scanner:Scanner, delimiter:String) -> [T]?
 {
 	var list = [T]()
 	var commaIndex: String.Index? = nil
@@ -55,14 +53,14 @@ func parseList<T:Scannable>(scanner:Scanner, delimiter:String) -> [T]?
 	return list
 }
 
-func toString<T:Stringable>(list: [T], delimeter:String) -> String
+func toString<T:ParseElement>(list: [T], delimeter:String) -> String
 {
 	return list.reduce("") { result, next in
 		return result == "" ? next.toString() : result + delimeter + next.toString()
 	}
 }
 
-enum Modifier: Hashable, CustomStringConvertible {
+enum Modifier: ParseElement {
 	case closed
 	case off
 	case unknown
@@ -110,7 +108,7 @@ enum Modifier: Hashable, CustomStringConvertible {
 }
 
 // "05:30"
-enum Hour: Hashable, CustomStringConvertible {
+enum Hour: ParseElement {
 
 	case sunrise
 	case sunset
@@ -188,7 +186,7 @@ enum Hour: Hashable, CustomStringConvertible {
 }
 
 // "Mo"
-enum Day: Int, CaseIterable {
+enum Day: Int, CaseIterable, ParseElement {
 
 	case Mo
 	case Tu
@@ -229,8 +227,32 @@ enum Day: Int, CaseIterable {
 	}
 }
 
+enum Holiday: ParseElement {
+	case PH
+	case SH
+
+	static func scan(scanner: Scanner) -> Holiday? {
+		if scanner.scanWord("PH") != nil {
+			return Holiday.PH
+		}
+		if scanner.scanWord("SH") != nil {
+			return Holiday.SH
+		}
+		return nil
+	}
+	func toString() -> String {
+		switch self {
+		case .PH:	return "PH"
+		case .SH:	return "SH"
+		}
+	}
+	var description: String {
+		return toString()
+	}
+}
+
 // "Jan"
-enum Month : Int, CaseIterable, CustomStringConvertible {
+enum Month : Int, CaseIterable, ParseElement {
 	case Jan
 	case Feb
 	case Mar
@@ -267,7 +289,7 @@ enum Month : Int, CaseIterable, CustomStringConvertible {
 }
 
 // "Jan" or "Jan 5"
-struct MonthDay: Hashable, CustomStringConvertible {
+struct MonthDay: ParseElement {
 	var month: Month
 	var day: Int?
 
@@ -304,7 +326,7 @@ struct MonthDay: Hashable, CustomStringConvertible {
 }
 
 // "5:30-10:30"
-struct HourRange: Scannable, Stringable, Hashable, CustomStringConvertible {
+struct HourRange: ParseElement {
 
 	public var begin : Hour
 	public var end : Hour
@@ -354,7 +376,7 @@ struct HourRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 }
 
 // "Mo-Fr"
-struct DayRange: Scannable, Stringable, Hashable, CustomStringConvertible {
+struct DayRange: ParseElement {
 	var begin: Day
 	var end: Day
 
@@ -387,7 +409,7 @@ struct DayRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 }
 
 // "Apr 5-10" or "Apr 3-May 22"
-struct MonthDayRange: Scannable, Stringable, Hashable, CustomStringConvertible {
+struct MonthDayRange: ParseElement {
 	var begin: MonthDay
 	var end: MonthDay
 
@@ -429,7 +451,8 @@ struct MonthDayRange: Scannable, Stringable, Hashable, CustomStringConvertible {
 }
 
 // "Mo-Fr 6:00-18:00, Sa,Su 6:00-12:00"
-struct DaysHours: Scannable, Stringable, Hashable {
+struct DaysHours: ParseElement {
+
 	var days : [DayRange]
 	var hours : [HourRange]
 
@@ -516,10 +539,13 @@ struct DaysHours: Scannable, Stringable, Hashable {
 		let s2 = OpeningHours.toString(list: hours, delimeter: ",")
 		return s1.count > 0 && s2.count > 0 ? s1+" "+s2 : s1+s2
 	}
+	var description: String {
+		return toString()
+	}
 }
 
 // "Jan-Sep M-F 10:00-18:00"
-struct MonthsDaysHours: Scannable, Stringable, Hashable, CustomStringConvertible {
+struct MonthsDaysHours: ParseElement {
 
 	var months: [MonthDayRange]
 	var daysHours: [DaysHours]
