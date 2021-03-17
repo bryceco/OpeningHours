@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		020845072602A43200747D9F /* Grammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020845062602A43200747D9F /* Grammar.swift */; };
 		022A1E2925F4A85300810DDE /* opening_hours.json in Resources */ = {isa = PBXBuildFile; fileRef = 022A1E2825F4A85300810DDE /* opening_hours.json */; };
 		02FF27F225F05BCE001B4910 /* OpeningHoursApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */; };
 		02FF27F425F05BCE001B4910 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF27E025F05BCD001B4910 /* ContentView.swift */; };
@@ -16,6 +17,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		020845062602A43200747D9F /* Grammar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Grammar.swift; sourceTree = "<group>"; };
 		022A1E2825F4A85300810DDE /* opening_hours.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = opening_hours.json; sourceTree = "<group>"; };
 		02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpeningHoursApp.swift; sourceTree = "<group>"; };
 		02FF27E025F05BCD001B4910 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -41,6 +43,7 @@
 		02FF27D925F05BCD001B4910 = {
 			isa = PBXGroup;
 			children = (
+				020845062602A43200747D9F /* Grammar.swift */,
 				02FF280025F07469001B4910 /* OpeningHours.entitlements */,
 				02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */,
 				02FF27E025F05BCD001B4910 /* ContentView.swift */,
@@ -133,6 +136,7 @@
 				02FF27F425F05BCE001B4910 /* ContentView.swift in Sources */,
 				02FF280825F2CAC7001B4910 /* OpenHours.swift in Sources */,
 				02FF280225F2B94A001B4910 /* TagInfo.swift in Sources */,
+				020845072602A43200747D9F /* Grammar.swift in Sources */,
 				02FF27F225F05BCE001B4910 /* OpeningHoursApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
