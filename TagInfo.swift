@@ -22,13 +22,15 @@ class TagInfo : Codable {
 		} while true
 		#endif
 
+		var badCnt = 0
 		for index in self.values.indices {
 			let value = self.values[index]
 
 			let dayHours = OpenHours(fromString: value)
 			if dayHours.groups.count == 0 {
 				print("\(index): \(value)")
-				while true {
+				badCnt += 1
+				for _ in 1...10 {
 					_ = OpenHours(fromString: value)
 				}
 				continue
@@ -42,6 +44,7 @@ class TagInfo : Codable {
 				_ = dayHours.toString()
 			}
 		}
+		print("bad percentage = \(100.0*Double(badCnt)/Double(self.values.count))")
 	}
 
 	func save() {
