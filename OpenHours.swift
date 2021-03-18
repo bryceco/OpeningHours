@@ -226,24 +226,20 @@ enum Day: Int, CaseIterable, ParseElement {
 	}
 }
 
-enum Holiday: ParseElement {
-	case PH
-	case SH
+enum Holiday: String, CaseIterable, ParseElement {
+	case PH = "PH"
+	case SH = "SH"
 
 	static func scan(scanner: Scanner) -> Holiday? {
-		if scanner.scanWord("PH") != nil {
-			return Holiday.PH
-		}
-		if scanner.scanWord("SH") != nil {
-			return Holiday.SH
+		for value in Holiday.allCases {
+			if scanner.scanWord(value.rawValue) != nil {
+				return value
+			}
 		}
 		return nil
 	}
 	func toString() -> String {
-		switch self {
-		case .PH:	return "PH"
-		case .SH:	return "SH"
-		}
+		return self.rawValue
 	}
 }
 
