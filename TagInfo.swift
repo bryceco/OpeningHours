@@ -28,7 +28,9 @@ class TagInfo : Codable {
 			let dayHours = OpenHours(fromString: value)
 			if dayHours.groups.count == 0 {
 				print("\(index): \(value)")
-				_ = OpenHours(fromString: value)
+				while true {
+					_ = OpenHours(fromString: value)
+				}
 				continue
 			}
 			let s = dayHours.toString()

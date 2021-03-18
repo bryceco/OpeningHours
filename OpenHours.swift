@@ -7,9 +7,18 @@
 
 import Foundation
 
-protocol ParseElement : Hashable, CustomStringConvertible {
+protocol ParseElement : Hashable, CustomStringConvertible, CustomDebugStringConvertible {
 	static func scan(scanner: Scanner) -> Self?
 	func toString() -> String
+}
+
+extension ParseElement {
+	var description: String {
+		return toString()
+	}
+	var debugDescription: String {
+		return toString()
+	}
 }
 
 extension Scanner {
@@ -27,6 +36,12 @@ extension Scanner {
 		}
 		return nil
 	}
+	var remainder: String {
+		let index = self.currentIndex
+		let s = scanUpToString("***")
+		self.currentIndex = index
+		return s ?? ""
+	}
 }
 
 func parseList<T:ParseElement>(scanner:Scanner, delimiter:String) -> [T]?
@@ -34,10 +49,12 @@ func parseList<T:ParseElement>(scanner:Scanner, delimiter:String) -> [T]?
 	var list = [T]()
 	var commaIndex: String.Index? = nil
 	repeat {
+		// hack because grammar is poorly defined:
+		// Mo-Fr 09:00-15:00, Sa 09:00-18:00
+		// Mo-Fr 09:00-15:00, 18:00-21:00
 		if T.self == HourRange.self,
 			let commaIndex = commaIndex
 		{
-			// hack because grammar is poorly defined
 			let currentIndex = scanner.currentIndex
 			if scanner.scanInt() == nil {
 				// next item isn't a time, so exit out to parse a day
@@ -46,8 +63,9 @@ func parseList<T:ParseElement>(scanner:Scanner, delimiter:String) -> [T]?
 			}
 			scanner.currentIndex = currentIndex
 		}
-		guard let hoursRange = T.scan(scanner:scanner) else { return nil }
-		list.append(hoursRange)
+
+		guard let item = T.scan(scanner:scanner) else { return nil }
+		list.append(item)
 		commaIndex = scanner.currentIndex
 	} while scanner.scanString(delimiter) != nil
 	return list
@@ -76,44 +94,27 @@ struct Comment: ParseElement {
 	func toString() -> String {
 		return "\"\(text)\""
 	}
-	var description: String{
-		return toString()
-	}
 }
 
-enum Modifier: ParseElement {
-	case closed
-	case off
-	case unknown
+enum Modifier: String, CaseIterable, ParseElement {
+	case open = "open"
+	case closed = "closed"
+	case off = "off"
+	case unknown = "unknown"
 
 	static func scan(scanner:Scanner) -> Modifier?
 	{
-		if scanner.scanWord("closed") != nil {
-			return .closed
-		}
-		if scanner.scanWord("off") != nil {
-			return .off
-		}
-		if scanner.scanWord("unknown") != nil {
-			return .unknown
+		for value in Modifier.allCases {
+			if scanner.scanWord(value.rawValue) != nil {
+				return value
+			}
 		}
 		return nil
 	}
 
 	func toString() -> String
 	{
-		switch self {
-		case .closed:
-			return "closed"
-		case .off:
-			return "off"
-		case .unknown:
-			return "unknown"
-		}
-	}
-
-	var description: String {
-		return toString()
+		return self.rawValue
 	}
 }
 
@@ -180,10 +181,6 @@ enum Hour: ParseElement {
 		}
 	}
 
-	var description: String {
-		return toString()
-	}
-
 	func toMinute() -> Int?
 	{
 		switch self {
@@ -205,8 +202,6 @@ enum Day: Int, CaseIterable, ParseElement {
 	case Fr
 	case Sa
 	case Su
-	case PH
-	case SH
 
 	static func scan(scanner:Scanner) -> Day?
 	{
@@ -227,13 +222,7 @@ enum Day: Int, CaseIterable, ParseElement {
 		case .Fr: return "Fr"
 		case .Sa: return "Sa"
 		case .Su: return "Su"
-		case .PH: return "PH"
-		case .SH: return "SH"
 		}
-	}
-
-	var description: String {
-		return toString()
 	}
 }
 
@@ -256,9 +245,6 @@ enum Holiday: ParseElement {
 		case .SH:	return "SH"
 		}
 	}
-	var description: String {
-		return toString()
-	}
 }
 
 // "Jan"
@@ -280,10 +266,6 @@ enum Month : Int, CaseIterable, ParseElement {
 
 	func toString() -> String {
 		return Month.names[self.rawValue]
-	}
-
-	var description: String {
-		return toString()
 	}
 
 	static func scan(scanner:Scanner) -> Month?
@@ -329,10 +311,6 @@ struct MonthDay: ParseElement {
 			return month.toString()
 		}
 	}
-
-	var description: String {
-		return toString()
-	}
 }
 
 // "5:30-10:30"
@@ -374,10 +352,6 @@ struct HourRange: ParseElement {
 		return "\(begin.toString())-\(end.toString())"
 	}
 
-	var description: String {
-		return toString()
-	}
-
 	func is24Hour() -> Bool {
 		if let begin = begin.toMinute(),
 		   begin == 0,
@@ -390,9 +364,65 @@ struct HourRange: ParseElement {
 	}
 }
 
-// "Mo-Fr" or "PH"
+struct NthEntry: ParseElement {
+	var begin: Int
+	var end: Int
+
+	static func inRange(_ index:Int) -> Bool {
+		return (index >= 1 && index <= 5) || (index >= -5 && index <= -1)
+	}
+	static func scan(scanner: Scanner) -> NthEntry? {
+		let index = scanner.currentIndex
+		if let begin = scanner.scanInt(),
+		   inRange(begin)
+		{
+			let index2 = scanner.currentIndex
+			if scanner.scanString("-") != nil,
+			   let end = scanner.scanInt(),
+			   inRange(end)
+			{
+				return NthEntry(begin: begin, end: end)
+			}
+			scanner.currentIndex = index2
+			return NthEntry(begin: begin, end: begin)
+		}
+		scanner.currentIndex = index
+		return nil
+	}
+
+	func toString() -> String {
+		if begin == end {
+			return "\(begin)"
+		} else {
+			return "\(begin)-\(end)"
+		}
+	}
+}
+
+struct NthEntryList: ParseElement {
+	var list:[NthEntry]
+
+	static func scan(scanner: Scanner) -> NthEntryList? {
+		let index = scanner.currentIndex
+		if scanner.scanString("[") != nil {
+			if let list:[NthEntry] = parseList(scanner: scanner, delimiter: ","),
+			   scanner.scanString("]") != nil
+			{
+				return NthEntryList(list:list)
+			}
+		}
+		scanner.currentIndex = index
+		return nil
+	}
+	func toString() -> String {
+		return OpeningHours.toString(list: list, delimeter: ",")
+	}
+}
+
+// "Mo-Fr" or "Mo[-1]" or "PH"
 enum DayRange: ParseElement {
 	case holiday(Holiday)
+	case weekday(Day,NthEntryList?)
 	case weekdays(Day,Day)
 
 	static let defaultValue = DayRange.weekdays(.Mo, .Su)
@@ -409,7 +439,8 @@ enum DayRange: ParseElement {
 				}
 				return nil
 			}
-			return DayRange.weekdays(firstDay, firstDay)
+			let nth = NthEntryList.scan(scanner: scanner)
+			return DayRange.weekday(firstDay, nth)
 		}
 		return nil
 	}
@@ -418,16 +449,14 @@ enum DayRange: ParseElement {
 		switch self {
 		case let .holiday(holiday):
 			return holiday.toString()
-		case let .weekdays(begin, end):
-			if begin == end {
-				return "\(begin)"
-			} else {
-				return "\(begin)-\(end)"
+		case let .weekday(day, nth):
+			if let nth = nth {
+				return "\(day)[\(nth)]"
 			}
+			return "\(day)"
+		case let .weekdays(begin, end):
+			return "\(begin)-\(end)"
 		}
-	}
-	var description: String {
-		return self.toString()
 	}
 }
 
@@ -466,10 +495,6 @@ struct MonthDayRange: ParseElement {
 		} else {
 			return "\(begin)-\(end)"
 		}
-	}
-
-	var description: String {
-		return toString()
 	}
 }
 
@@ -519,6 +544,8 @@ struct DaysHours: ParseElement {
 		var set = Set<Int>()
 		for dayRange in days {
 			switch dayRange {
+				case let .weekday(day, _):
+					set.insert(day.rawValue)
 				case let .weekdays(begin, end):
 					for day in begin.rawValue...end.rawValue {
 						set.insert(day)
@@ -534,7 +561,8 @@ struct DaysHours: ParseElement {
 		var set = Set<Holiday>()
 		for day in days {
 			switch day {
-				case .weekdays:
+				case .weekday,
+					 .weekdays:
 					break
 				case let .holiday(holiday):
 					set.insert(holiday)
@@ -593,9 +621,6 @@ struct DaysHours: ParseElement {
 		let s2 = OpeningHours.toString(list: hours, delimeter: ",")
 		return s1.count > 0 && s2.count > 0 ? s1+" "+s2 : s1+s2
 	}
-	var description: String {
-		return toString()
-	}
 }
 
 // "Jan-Sep M-F 10:00-18:00"
@@ -647,10 +672,6 @@ struct MonthsDaysHours: ParseElement {
 		let s2 = OpeningHours.toString(list: daysHours, delimeter: ", ")
 		let r = s1.count > 0 && s2.count > 0 ? s1+" "+s2 : s1+s2
 		return r
-	}
-
-	var description: String {
-		return toString()
 	}
 
 	static func scan(scanner:Scanner) -> MonthsDaysHours?
