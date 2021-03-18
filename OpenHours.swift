@@ -123,6 +123,9 @@ enum Hour: ParseElement {
 
 	case sunrise
 	case sunset
+	case dawn
+	case dusk
+	case indefinite	// used for end-time in 6:00+ notation
 	case time(Int)
 
 	static func scan(scanner:Scanner) -> Hour?
@@ -133,13 +136,17 @@ enum Hour: ParseElement {
 		{
 			return .time(hour*60+minute)
 		}
-		if scanner.scanWord("sunrise") != nil ||
-			scanner.scanWord("dawn") != nil {
+		if scanner.scanWord("sunrise") != nil {
 			return .sunrise
 		}
-		if scanner.scanWord("sunset") != nil ||
-			scanner.scanWord("dusk") != nil {
+		if scanner.scanWord("sunset") != nil {
 			return .sunset
+		}
+		if scanner.scanWord("dawn") != nil {
+			return .dawn
+		}
+		if scanner.scanWord("dusk") != nil {
+			return .dusk
 		}
 		return nil
 	}
@@ -151,10 +158,17 @@ enum Hour: ParseElement {
 			return "sunrise"
 		case .sunset:
 			return "sunset"
+		case .dawn:
+			return "dawn"
+		case .dusk:
+			return "dusk"
 		case let .time(time):
 			let hour = time/60
 			let minute = time%60
 			return String(format: "%02d:%02d", arguments: [hour,minute])
+		case .indefinite:
+			assert(false)
+			return "+"
 		}
 	}
 
@@ -325,12 +339,22 @@ struct HourRange: ParseElement {
 		let index = scanner.currentIndex
 
 		var range: (Hour,Hour)? = nil
-		if let firstHour = Hour.scan(scanner: scanner),
-		   scanner.scanString("-") != nil,
-		   let lastHour = Hour.scan(scanner: scanner)
-		{
-			range = (firstHour,lastHour)
+		if let firstHour = Hour.scan(scanner: scanner) {
+			range = (firstHour,firstHour)
+			let index2 = scanner.currentIndex
+			if scanner.scanString("-") != nil {
+				if let lastHour = Hour.scan(scanner: scanner) {
+					range = (firstHour,lastHour)
+				} else {
+					scanner.currentIndex = index2
+				}
+			}
+			if scanner.scanString("+") != nil {
+				range = (firstHour,Hour.indefinite)
+			}
 		}
+
+
 
 		let modifier = Modifier.scan(scanner: scanner)
 		let comment = Comment.scan(scanner: scanner)
@@ -345,7 +369,11 @@ struct HourRange: ParseElement {
 
 	func toString() -> String
 	{
-		return "\(begin.toString())-\(end.toString())"
+		if end == Hour.indefinite {
+			return "\(begin.toString())+"
+		} else {
+			return "\(begin.toString())-\(end.toString())"
+		}
 	}
 
 	func is24Hour() -> Bool {
