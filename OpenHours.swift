@@ -36,6 +36,7 @@ extension Scanner {
 		}
 		return nil
 	}
+
 	func scanWordPrefix(_ text:String, minLength:Int) -> String? {
 		let index = self.currentIndex
 
@@ -49,6 +50,7 @@ extension Scanner {
 		self.currentIndex = index
 		return nil
 	}
+
 	static let dashCharacters = CharacterSet.init(charactersIn: "-–‐‒–—―") // - %u2013 %u2010 %u2012 %u2013 %u2014 %u2015
 	func scanDash() -> String? {
 		if let dash = self.scanCharacters(from: Scanner.dashCharacters) {
@@ -57,6 +59,7 @@ extension Scanner {
 		}
 		return nil
 	}
+
 	var remainder: String {
 		let index = self.currentIndex
 		let s = scanUpToString("***")
@@ -68,26 +71,21 @@ extension Scanner {
 func parseList<T:ParseElement>(scanner:Scanner, delimiter:String) -> [T]?
 {
 	var list = [T]()
-	var commaIndex: String.Index? = nil
+	var delimiterIndex: String.Index? = nil
+
 	repeat {
-		// hack because grammar is poorly defined:
-		// Mo-Fr 09:00-15:00, Sa 09:00-18:00
-		// Mo-Fr 09:00-15:00, 18:00-21:00
-		if T.self == HourRange.self,
-			let commaIndex = commaIndex
-		{
-			let currentIndex = scanner.currentIndex
-			if scanner.scanInt() == nil {
-				// next item isn't a time, so exit out to parse a day
+		guard let item = T.scan(scanner:scanner) else {
+			// back up to before preceding comma
+			if let commaIndex = delimiterIndex {
 				scanner.currentIndex = commaIndex
 				return list
+			} else {
+				return nil
 			}
-			scanner.currentIndex = currentIndex
 		}
 
-		guard let item = T.scan(scanner:scanner) else { return nil }
 		list.append(item)
-		commaIndex = scanner.currentIndex
+		delimiterIndex = scanner.currentIndex
 	} while scanner.scanString(delimiter) != nil
 	return list
 }
@@ -159,14 +157,24 @@ enum Hour: ParseElement {
 	case indefinite	// used for end-time in 6:00+ notation
 	case time(Int)
 
+	static let minuteSeperators = CharacterSet(charactersIn: ":_")
 	static func scan(scanner:Scanner) -> Hour?
 	{
+		let index = scanner.currentIndex
+		let skipped = scanner.charactersToBeSkipped
+		scanner.charactersToBeSkipped = nil
+		_ = scanner.scanCharacters(from: CharacterSet.whitespacesAndNewlines)
 		if let hour = scanner.scanInt(),
-			scanner.scanString(":") != nil,
-			let minute = scanner.scanInt()
+		   scanner.scanCharacters(from: minuteSeperators)?.count == 1,
+		   let minute = scanner.scanInt()
 		{
+			scanner.charactersToBeSkipped = skipped
 			return .time(hour*60+minute)
+		} else {
+			scanner.currentIndex = index
 		}
+		scanner.charactersToBeSkipped = skipped
+
 		if scanner.scanWord("sunrise") != nil {
 			return .sunrise
 		}
@@ -362,12 +370,12 @@ struct MonthDay: ParseElement {
 		let year = Year.scan(scanner: scanner)
 		if let mon = Month.scan(scanner: scanner) {
 			let index2 = scanner.currentIndex
+			if let _ = HourRange.scan(scanner: scanner) {
+				// "Apr 5:30-6:30"
+				scanner.currentIndex = index2
+				return MonthDay(year: year, month: mon, day: nil)
+			}
 			if let day = scanner.scanInt() {
-				if scanner.scanString(":") != nil {
-					// "Apr 5:30-6:30"
-					scanner.currentIndex = index2
-					return MonthDay(year: year, month: mon, day: nil)
-				}
 				// "Apr 5"
 				return MonthDay(year: year, month: mon, day: day)
 			} else {
@@ -395,29 +403,20 @@ struct HourRange: ParseElement {
 
 	static func scan(scanner:Scanner) -> HourRange?
 	{
-		let index = scanner.currentIndex
-
-		var range: (Hour,Hour)? = nil
 		if let firstHour = Hour.scan(scanner: scanner) {
-			range = (firstHour,firstHour)
-			let index2 = scanner.currentIndex
-			if scanner.scanDash() != nil {
-				if let lastHour = Hour.scan(scanner: scanner) {
-					range = (firstHour,lastHour)
-				} else {
-					scanner.currentIndex = index2
-				}
+			let index = scanner.currentIndex
+			if scanner.scanDash() != nil,
+			   let lastHour = Hour.scan(scanner: scanner)
+			{
+				return HourRange(begin: firstHour, end: lastHour)
 			}
+			scanner.currentIndex = index
 			if scanner.scanString("+") != nil {
-				range = (firstHour,Hour.indefinite)
+				return HourRange(begin: firstHour, end: Hour.indefinite)
+			} else {
+				return HourRange(begin: firstHour, end: firstHour)
 			}
 		}
-
-		if range != nil {
-			let hours = range ?? (Hour.time(0), Hour.time(0))
-			return HourRange(begin: hours.0, end: hours.1)
-		}
-		scanner.currentIndex = index
 		return nil
 	}
 
@@ -482,12 +481,11 @@ struct NthEntryList: ParseElement {
 
 	static func scan(scanner: Scanner) -> NthEntryList? {
 		let index = scanner.currentIndex
-		if scanner.scanString("[") != nil {
-			if let list:[NthEntry] = parseList(scanner: scanner, delimiter: ","),
-			   scanner.scanString("]") != nil
-			{
-				return NthEntryList(list:list)
-			}
+		if scanner.scanString("[") != nil,
+		   let list:[NthEntry] = parseList(scanner: scanner, delimiter: ","),
+		   scanner.scanString("]") != nil
+		{
+			return NthEntryList(list:list)
 		}
 		scanner.currentIndex = index
 		return nil
@@ -511,12 +509,13 @@ enum DayRange: ParseElement {
 			return DayRange.holiday(holiday)
 		}
 		if let firstDay = Day.scan(scanner: scanner) {
-			if scanner.scanDash() != nil {
-				if let lastDay = Day.scan(scanner: scanner) {
-					return DayRange.weekdays(firstDay, lastDay)
-				}
-				return nil
+			let index = scanner.currentIndex
+			if scanner.scanDash() != nil,
+			   let lastDay = Day.scan(scanner: scanner)
+			{
+				return DayRange.weekdays(firstDay, lastDay)
 			}
+			scanner.currentIndex = index
 			let nth = NthEntryList.scan(scanner: scanner)
 			return DayRange.weekday(firstDay, nth)
 		}
@@ -548,6 +547,7 @@ struct MonthDayRange: ParseElement {
 	static func scan(scanner: Scanner) -> MonthDayRange?
 	{
 		if let first = MonthDay.scan(scanner: scanner) {
+			let dashIndex = scanner.currentIndex
 			if scanner.scanDash() != nil {
 				if first.day != nil,
 				   let day = scanner.scanInt()
@@ -560,7 +560,7 @@ struct MonthDayRange: ParseElement {
 				if let last = MonthDay.scan(scanner: scanner) {
 					return MonthDayRange(begin: first, end: last)
 				}
-				return nil
+				scanner.currentIndex = dashIndex
 			}
 			return MonthDayRange(begin: first, end: first)
 		}
@@ -717,6 +717,23 @@ struct MonthsDaysHours: ParseElement {
 	var modifier : Modifier?
 	var comment : Comment?
 
+	static func scan(scanner:Scanner) -> MonthsDaysHours?
+	{
+		let months : [MonthDayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let readabilitySeperator = scanner.scanString(":")
+		let daysHours : [DaysHours] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let modifier = Modifier.scan(scanner: scanner)
+		let comment = Comment.scan(scanner: scanner)
+		if months.count == 0 && daysHours.count == 0 && modifier == nil && comment == nil {
+			return nil
+		}
+		return MonthsDaysHours(months: months,
+							   readabilitySeperator: readabilitySeperator,
+							   daysHours: daysHours,
+							   modifier: modifier,
+							   comment: comment)
+	}
+
 	func is24_7() -> Bool {
 		if months.count == 0,
 		   daysHours.count == 1,
@@ -761,29 +778,13 @@ struct MonthsDaysHours: ParseElement {
 		let r = s1.count > 0 && s2.count > 0 ? s1+" "+s2 : s1+s2
 		return r
 	}
-
-	static func scan(scanner:Scanner) -> MonthsDaysHours?
-	{
-		let months : [MonthDayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
-		let readabilitySeperator = scanner.scanString(":")
-		let daysHours : [DaysHours] = parseList(scanner: scanner, delimiter: ",") ?? []
-		let modifier = Modifier.scan(scanner: scanner)
-		let comment = Comment.scan(scanner: scanner)
-		if months.count == 0 && daysHours.count == 0 && modifier == nil && comment == nil {
-			return nil
-		}
-		return MonthsDaysHours(months: months,
-							   readabilitySeperator: readabilitySeperator,
-							   daysHours: daysHours,
-							   modifier: modifier,
-							   comment: comment)
-	}
 }
 
 class OpenHours: ObservableObject, CustomStringConvertible {
 
 	@Published var groups : [MonthsDaysHours]
 	private var textual : String
+	private var errorIndex : String.Index?
 
 	var string: String {
 		get {
@@ -793,30 +794,35 @@ class OpenHours: ObservableObject, CustomStringConvertible {
 			return textual
 		}
 		set {
-			if let result = OpenHours.parseString(newValue) {
+			let (result,errorLoc) = OpenHours.parseString(newValue)
+			if let result = result {
 				groups = result
 				textual = toString()
 			} else {
 				textual = newValue
 			}
+			self.errorIndex = errorLoc
 		}
 	}
 
 	init(fromString text:String) {
 		textual = text
-		groups = OpenHours.parseString(text) ?? []
+		let (result,errorLoc) = OpenHours.parseString(text)
+		self.groups = result ?? []
+		self.errorIndex = errorLoc
 	}
 
-	static func parseString(_ text:String) -> [MonthsDaysHours]? {
+	static func parseString(_ text:String) -> ([MonthsDaysHours]?,String.Index?) {
 		let scanner = Scanner(string: text)
 		scanner.caseSensitive = false
 		scanner.charactersToBeSkipped = CharacterSet.whitespaces
 
-		guard let result : [MonthsDaysHours] = parseList(scanner: scanner, delimiter: ";") else { return nil }
-		if !scanner.isAtEnd {
-			return nil
+		if let result : [MonthsDaysHours] = parseList(scanner: scanner, delimiter: ";"),
+		   scanner.isAtEnd
+		{
+			return (result,nil)
 		}
-		return result
+		return (nil,scanner.currentIndex)
 	}
 
 	func deleteMonthDayHours(at index:Int) -> Void {
@@ -838,5 +844,27 @@ class OpenHours: ObservableObject, CustomStringConvertible {
 
 	var description: String {
 		return toString()
+	}
+
+	var errorPosition: Int {
+		var pos = 0
+		var index = textual.startIndex
+		while index != errorIndex {
+			index = textual.index(after: index)
+			pos += 1
+		}
+		return pos
+	}
+
+	func printErrorMessage() {
+		print("\(textual)")
+		if errorIndex != nil {
+			var s = ""
+			for _ in 0..<errorPosition {
+				s += "-"
+			}
+			s += "^"
+			print("\(s)")
+		}
 	}
 }

@@ -16,9 +16,9 @@ class TagInfo : Codable {
 
 		#if false
 		repeat {
-			let s = "sunrise-sunset"
+			let s = "Apr 1-Oct 31: \"needs reservation by phone or web\""
 			let v = OpenHours.init(fromString: s)
-			print("\"\(v.toString())\"")
+			v.printErrorMessage()
 		} while true
 		#endif
 
@@ -26,22 +26,23 @@ class TagInfo : Codable {
 		for index in self.values.indices {
 			let value = self.values[index]
 
-			let dayHours = OpenHours(fromString: value)
-			if dayHours.groups.count == 0 {
-				print("\(index): \(value)")
+			let hours = OpenHours(fromString: value)
+			if hours.groups.count == 0 {
+				print("\(index):")
+				hours.printErrorMessage()
 				badCnt += 1
 				for _ in 1...10 {
 					_ = OpenHours(fromString: value)
 				}
 				continue
 			}
-			let s = dayHours.toString()
+			let s = hours.toString()
 			let unSpaced1 = value.replacingOccurrences(of: ";", with: ",").replacingOccurrences(of: ", ", with: ",")
 			let unSpaced2 = value.replacingOccurrences(of: ";", with: ",").replacingOccurrences(of: ", ", with: ",")
 			if unSpaced1 != unSpaced2 {
 				print("\(index): \(value) --> \(s)")
 				_ = OpenHours(fromString: value)
-				_ = dayHours.toString()
+				_ = hours.toString()
 			}
 		}
 		print("bad percentage = \(100.0*Double(badCnt)/Double(self.values.count))")
