@@ -51,7 +51,7 @@ extension Scanner {
 		return nil
 	}
 
-	static let dashCharacters = CharacterSet.init(charactersIn: "-–‐‒–—―") // - %u2013 %u2010 %u2012 %u2013 %u2014 %u2015
+	static let dashCharacters = CharacterSet.init(charactersIn: "-–‐‒–—―~") // - %u2013 %u2010 %u2012 %u2013 %u2014 %u2015
 	func scanDash() -> String? {
 		if let dash = self.scanCharacters(from: Scanner.dashCharacters) {
 			// could end up with several dashes in a row but that shouldn't hurt anything
@@ -574,7 +574,9 @@ struct MonthDayRange: ParseElement {
 // "Mo-Fr 6:00-18:00, Sa,Su 6:00-12:00"
 struct DaysHours: ParseElement {
 
-	var days : [DayRange]
+	var weekdays : [DayRange]
+	var holidays : [Holiday]
+	var holidayFilter : [Holiday] // for space-seperated days: "PH Sa-Su" (i.e. holidays that fall on a weekend)
 	var hours : [HourRange]
 
 	static let everyDay:Set<Int> = [0,1,2,3,4,5,6]
@@ -588,22 +590,54 @@ struct DaysHours: ParseElement {
 			return DaysHours.hours_24_7
 		}
 
-		// need to parse days twice, because spaces are allowed to seperate ranges of days/holidays
-		let days1 : [DayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
-		let days2 : [DayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
-		let days = days1 + days2
+		// holidays are supposed to come first, but we support either order:
+		let holidays1 : [Holiday] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let comma1 = holidays1.count > 0 && scanner.scanString(",") != nil
+		let weekdays : [DayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let comma2 = weekdays.count > 0 && scanner.scanString(",") != nil
+		let holidays2 : [Holiday] = parseList(scanner: scanner, delimiter: ",") ?? []
+
 		let hours : [HourRange] = parseList(scanner: scanner, delimiter: ",") ?? []
-		if days.count == 0 && hours.count == 0 {
+		if weekdays.count == 0 && holidays1.count == 0 && holidays2.count == 0 && hours.count == 0 {
 			return nil
 		}
-		return DaysHours(days: days, hours: hours)
+
+		if comma1 && comma2 {
+			return DaysHours(weekdays: weekdays,
+							 holidays: holidays1+holidays2,
+							 holidayFilter: [],
+							 hours: hours)
+		}
+		if comma1 {
+			return DaysHours(weekdays: weekdays,
+							 holidays: holidays1,
+							 holidayFilter: holidays2,
+							 hours: hours)
+		}
+		if comma2 {
+			return DaysHours(weekdays: weekdays,
+							 holidays: holidays2,
+							 holidayFilter: holidays1,
+							 hours: hours)
+		}
+		// illegal, but we'll treat it as two holiday filters
+		return DaysHours(weekdays: weekdays,
+						 holidays: [],
+						 holidayFilter: holidays1+holidays2,
+						 hours: hours)
 	}
 
-	static let defaultValue = DaysHours(days: [DayRange.defaultValue], hours: [HourRange.defaultValue])
-	static let hours_24_7 = DaysHours(days: [], hours: [HourRange.allDay])
+	static let defaultValue = DaysHours(weekdays: [DayRange.defaultValue],
+										holidays: [],
+										holidayFilter: [],
+										hours: [HourRange.defaultValue])
+	static let hours_24_7 = DaysHours(weekdays: [],
+									  holidays: [],
+									  holidayFilter: [],
+									  hours: [HourRange.allDay])
 
 	func is24_7() -> Bool {
-		if days.count == 0,
+		if weekdays.count == 0,
 		   hours.count == 1,
 		   let hourRange = hours.first,
 		   hourRange.is24Hour()
@@ -620,7 +654,7 @@ struct DaysHours: ParseElement {
 		hours.remove(at: index)
 	}
 
-	func weekdaysSet() -> Set<Int> {
+	static func weekdaysSet(days:[DayRange]) -> Set<Int> {
 		var set = Set<Int>()
 		for dayRange in days {
 			switch dayRange {
@@ -637,7 +671,7 @@ struct DaysHours: ParseElement {
 		return set
 	}
 
-	func holidaysSet() -> Set<Holiday> {
+	static func holidaysSet(days:[DayRange]) -> Set<Holiday> {
 		var set = Set<Holiday>()
 		for day in days {
 			switch day {
@@ -649,6 +683,14 @@ struct DaysHours: ParseElement {
 			}
 		}
 		return set
+	}
+
+	func weekdaysSet() -> Set<Int> {
+		return DaysHours.weekdaysSet(days:weekdays)
+	}
+
+	func holidaysSet() -> Set<Holiday> {
+		return DaysHours.holidaysSet(days:weekdays)
 	}
 
 	static func dayRangesForWeekdaysSet( _ set: Set<Int> ) -> [DayRange] {
@@ -690,14 +732,14 @@ struct DaysHours: ParseElement {
 			set.insert(day)
 		}
 		if set == DaysHours.everyDay {
-			self.days = []
+			self.weekdays = []
 			return
 		}
-		self.days = DaysHours.dayRangesForWeekdaysSet(set)
+		self.weekdays = DaysHours.dayRangesForWeekdaysSet(set)
 	}
 
 	func toString() -> String {
-		let s1 = OpeningHours.toString(list: days, delimeter: ",")
+		let s1 = OpeningHours.toString(list: weekdays, delimeter: ",")
 		let s2 = OpeningHours.toString(list: hours, delimeter: ",")
 		return s1.count > 0 && s2.count > 0 ? s1+" "+s2 : s1+s2
 	}
@@ -756,7 +798,7 @@ struct MonthsDaysHours: ParseElement {
 		var dh = DaysHours.defaultValue
 		if days.count > 0 {
 			let set = DaysHours.everyDay.subtracting(days)
-			dh.days = DaysHours.dayRangesForWeekdaysSet( set )
+			dh.weekdays = DaysHours.dayRangesForWeekdaysSet( set )
 		}
 		daysHours.append(dh)
 	}
@@ -828,8 +870,10 @@ class OpenHours: ObservableObject, CustomStringConvertible {
 	}
 	func addMonthDayHours() -> Void {
 		groups.append(MonthsDaysHours(months: [],
-									daysHours: [DaysHours(days: [DayRange.defaultValue],
-														  hours: [HourRange.defaultValue])]))
+									  daysHours: [DaysHours(weekdays: [DayRange.defaultValue],
+															holidays: [],
+															holidayFilter: [],
+															hours: [HourRange.defaultValue])]))
 	}
 
 
