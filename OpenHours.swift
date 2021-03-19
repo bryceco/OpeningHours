@@ -154,7 +154,6 @@ enum Hour: ParseElement {
 	case sunset
 	case dawn
 	case dusk
-	case indefinite	// used for end-time in 6:00+ notation
 	case time(Int)
 
 	static let minuteSeperators = CharacterSet(charactersIn: ":_")
@@ -205,9 +204,6 @@ enum Hour: ParseElement {
 			let hour = time/60
 			let minute = time%60
 			return String(format: "%02d:%02d", arguments: [hour,minute])
-		case .indefinite:
-			assert(false)
-			return "+"
 		}
 	}
 
@@ -397,9 +393,10 @@ struct HourRange: ParseElement {
 
 	public var begin : Hour
 	public var end : Hour
+	public var plus : Bool
 
-	static let defaultValue = HourRange(begin: Hour.time(10*60), end: Hour.time(18*60))
-	static let allDay = HourRange(begin: Hour.time(0), end: Hour.time(24*60))
+	static let defaultValue = HourRange(begin: Hour.time(10*60), end: Hour.time(18*60), plus: false)
+	static let allDay = HourRange(begin: Hour.time(0), end: Hour.time(24*60), plus: false)
 
 	static func scan(scanner:Scanner) -> HourRange?
 	{
@@ -408,24 +405,22 @@ struct HourRange: ParseElement {
 			if scanner.scanDash() != nil,
 			   let lastHour = Hour.scan(scanner: scanner)
 			{
-				return HourRange(begin: firstHour, end: lastHour)
+				let plus = scanner.scanString("+") != nil
+				return HourRange(begin: firstHour, end: lastHour, plus: plus)
 			}
 			scanner.currentIndex = index
-			if scanner.scanString("+") != nil {
-				return HourRange(begin: firstHour, end: Hour.indefinite)
-			} else {
-				return HourRange(begin: firstHour, end: firstHour)
-			}
+			let plus = scanner.scanString("+") != nil
+			return HourRange(begin: firstHour, end: firstHour, plus: plus)
 		}
 		return nil
 	}
 
 	func toString() -> String
 	{
-		if end == Hour.indefinite {
-			return "\(begin.toString())+"
+		if begin == end {
+			return "\(begin.toString())\(plus ?"+":"")"
 		} else {
-			return "\(begin.toString())-\(end.toString())"
+			return "\(begin.toString())-\(end.toString())\(plus ?"+":"")"
 		}
 	}
 
