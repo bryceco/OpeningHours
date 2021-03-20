@@ -59,6 +59,86 @@ struct TrashButton: View {
 	}
 }
 
+
+
+struct HourPickerModal: View {
+	@Binding var hour: Hour
+	@Binding var isPresented: Bool
+	@State private var temp: Hour
+
+	init( hour: Binding<Hour>, isPresented: Binding<Bool>) {
+		self._hour = hour
+		self._isPresented = isPresented
+		self._temp = State(initialValue: hour.wrappedValue)
+	}
+
+	var body: some View {
+
+		VStack {
+
+			HStack {
+				// type of time: "12:45" or "sunrise"
+				Picker("", selection: $temp.typeBinding, content: { // <2>
+					ForEach(Hour.allCases.indices, id:\.self) { typeIndex in
+						let type = Hour.allCases[typeIndex]
+						Text(typeIndex == 0 ? "clock" : type.toString())
+					}
+				})
+				.frame(width: 80)
+				.clipped()
+
+				if temp.isTime() {
+					Picker("", selection: $temp.hourBinding, content: { // <2>
+						ForEach(0...24, id:\.self) { hour in
+							Text("\(String(format: "%02d", hour))")
+						}
+					})
+					.frame(width: 80)
+					.clipped()
+
+					Text(":")
+					
+					Picker("", selection: $temp.minuteBinding, content: { // <2>
+						ForEach(0...11, id:\.self) { minute in
+							Text("\(String(format: "%02d", 5*minute))")
+						}
+					})
+					.frame(width: 80)
+					.clipped()
+				}
+			}
+
+			Button(action: {
+				isPresented = false
+				hour = temp
+			}, label: {
+				Text("OK")
+			})
+		}
+		.padding()
+		.background(Color.white)
+		.cornerRadius(20)
+		.frame(maxWidth: .infinity,	maxHeight: .infinity)
+		.background(Color.black.opacity(0.2))
+		.ignoresSafeArea(edges: .all)
+	}
+}
+struct HourPickerButton: View {
+	@Binding var binding : Hour
+
+	@State private var showModalView: Bool = false
+
+	var body: some View {
+		Button(binding.toString(), action:{
+			showModalView = true
+		})
+		.popover(isPresented: $showModalView, content: {
+			HourPickerModal(hour: $binding, isPresented: $showModalView)
+		})
+	}
+}
+
+
 struct MonthDayPickerModal: View {
 	@Binding var monthDay: MonthDay
 	@Binding var isPresented: Bool
@@ -198,21 +278,17 @@ struct DaysOfWeekRowView: View {
 
 struct HoursRowView: View {
 
-	@Binding var date1 : Date
-	@Binding var date2 : Date
+	@Binding var date1 : Hour
+	@Binding var date2 : Hour
 	let deleteAction : () -> Void
 
 	var body: some View {
 		HStack {
 			Spacer()
-			DatePicker("",
-					   selection:$date1,
-					   displayedComponents:.hourAndMinute)
+			HourPickerButton(binding: $date1)
 				.frame(width: 100)
 			Text("-")
-			DatePicker("",
-					   selection:$date2,
-					   displayedComponents:.hourAndMinute)
+			HourPickerButton(binding: $date2)
 				.frame(width: 100)
 			Spacer()
 			TrashButton() {
@@ -230,8 +306,8 @@ struct HoursView: View {
 		VStack {
 			ForEach(daysHours.hours.indices, id:\.self) { hoursIndex in
 				SafeBinding($daysHours.hours, index: hoursIndex) { binding in
-					HoursRowView(date1: binding.begin.asDate,
-								 date2: binding.end.asDate,
+					HoursRowView(date1: binding.begin,
+								 date2: binding.end,
 								 deleteAction: {
 									daysHours.deleteHoursRange(at: hoursIndex)
 								 })

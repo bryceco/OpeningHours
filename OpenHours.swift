@@ -149,13 +149,25 @@ enum Modifier: String, CaseIterable, ParseElement {
 }
 
 // "05:30"
-enum Hour: ParseElement {
-
+enum Hour: CaseIterable, ParseElement {
 	case sunrise
 	case sunset
 	case dawn
 	case dusk
 	case time(Int)
+	case none			// used when trailing time of a range is missing
+
+	// time must be first here:
+	static var allCases: [Hour] = [.time(0),.sunrise,.sunset,.dawn,.dusk,.none]
+
+	func isTime() -> Bool {
+		switch self {
+		case .time:
+			return true
+		default:
+			return false
+		}
+	}
 
 	static let minuteSeperators = CharacterSet(charactersIn: ":_")
 	static func scan(scanner:Scanner) -> Hour?
@@ -201,6 +213,8 @@ enum Hour: ParseElement {
 			return "dawn"
 		case .dusk:
 			return "dusk"
+		case .none:
+			return "none"
 		case let .time(time):
 			let hour = time/60
 			let minute = time%60
@@ -208,26 +222,51 @@ enum Hour: ParseElement {
 		}
 	}
 
-	var asDate: Date {
+	var hourBinding: Int {
 		get {
 			switch self {
-			case let .time(time):
-				let gregorian = Calendar(identifier: .gregorian)
-				var components = gregorian.dateComponents([.year,.month,.day],
-														  from: Date())
-				components.hour = time / 60
-				components.minute = time % 60
-				components.second = 0
-				let yourDate = gregorian.date(from: components)
-				return yourDate!
-			default:
-				return Date()
+			case let .time(time):	return time / 60
+			default:				return 0
 			}
 		}
 		set {
-			let gregorian = Calendar(identifier: .gregorian)
-			let components = gregorian.dateComponents([.hour,.minute], from: newValue)
-			self = .time(components.hour!*60 + components.minute!)
+			var minute = 0
+			switch self {
+			case let .time(time):	minute = time % 60
+			default:				break
+			}
+			self = .time(newValue*60 + minute)
+		}
+	}
+
+	var minuteBinding: Int {
+		get {
+			switch self {
+			case let .time(time):	return time % 60 / 5
+			default:				return 0
+			}
+		}
+		set {
+			var hour = 0
+			switch self {
+			case let .time(time):	hour = time / 60
+			default:				break
+			}
+			self = .time(hour*60 + newValue*5)
+		}
+	}
+
+	var typeBinding: Int {
+		get {
+			switch self {
+			case .time:
+				return 0
+			default:
+				return Hour.allCases.firstIndex(of: self)!
+			}
+		}
+		set {
+			self = Hour.allCases[newValue]
 		}
 	}
 
@@ -419,7 +458,7 @@ struct MonthDay: ParseElement {
 struct HourRange: ParseElement {
 
 	public var begin : Hour
-	public var end : Hour?
+	public var end : Hour
 	public var plus : Bool
 
 	static let defaultValue = HourRange(begin: Hour.time(10*60), end: Hour.time(18*60), plus: false)
@@ -444,17 +483,17 @@ struct HourRange: ParseElement {
 
 	func toString() -> String
 	{
-		if let end = end {
-			return "\(begin.toString())-\(end.toString())\(plus ?"+":"")"
-		} else {
+		if end == Hour.none {
 			return "\(begin.toString())\(plus ?"+":"")"
+		} else {
+			return "\(begin.toString())-\(end.toString())\(plus ?"+":"")"
 		}
 	}
 
 	func is24Hour() -> Bool {
 		if let begin = begin.toMinute(),
 		   begin == 0,
-		   let end = end?.toMinute(),
+		   let end = end.toMinute(),
 		   end == 24*60
 		{
 			return true
