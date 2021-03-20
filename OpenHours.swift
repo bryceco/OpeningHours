@@ -272,7 +272,7 @@ enum Hour: ParseElement {
 }
 
 // "Mo"
-enum Day: Int, CaseIterable, ParseElement {
+enum Weekday: Int, CaseIterable, ParseElement {
 
 	case Mo
 	case Tu
@@ -292,12 +292,12 @@ enum Day: Int, CaseIterable, ParseElement {
 		["Sunday"]
 	]
 
-	static func scan(scanner:Scanner) -> Day?
+	static func scan(scanner:Scanner) -> Weekday?
 	{
 		for day in synonyms.indices {
 			for text in synonyms[day] {
 				if scanner.scanWordPrefix(text, minLength: 2) != nil {
-					return Day(rawValue: day)
+					return Weekday(rawValue: day)
 				}
 			}
 		}
@@ -305,7 +305,7 @@ enum Day: Int, CaseIterable, ParseElement {
 	}
 
 	func toString() -> String {
-		return Day.synonyms[self.rawValue][0]
+		return Weekday.synonyms[self.rawValue][0]
 	}
 }
 
@@ -323,6 +323,29 @@ enum Holiday: String, CaseIterable, ParseElement {
 	}
 	func toString() -> String {
 		return self.rawValue
+	}
+}
+
+struct NthWeekday: ParseElement {
+	var weekday: Weekday
+	var nth: NthEntry
+
+	static func scan(scanner: Scanner) -> NthWeekday? {
+		let index = scanner.currentIndex
+		if let day = Weekday.scan(scanner: scanner),
+		   let nthList = NthEntryList.scan(scanner: scanner),
+		   nthList.list.count == 1,
+		   let nth = nthList.list.first,
+		   nth.begin == nth.end
+		{
+			return NthWeekday(weekday: day, nth: nth)
+		}
+		scanner.currentIndex = index
+		return nil
+	}
+
+	func toString() -> String {
+		return "\(weekday.toString())[\(nth.toString())]"
 	}
 }
 
@@ -380,15 +403,14 @@ struct Year: ParseElement, Hashable, Equatable {
 	func toString() -> String {
 		return "\(self.year)"
 	}
-
-
 }
 
 // "Jan" or "Jan 5"
 struct MonthDay: ParseElement {
 	var year: Year?
 	var month: Month
-	var day: Int?
+	var day: Int?					// day and nthWeekday are mutually exclusive
+	var nthWeekday: NthWeekday?
 
 	static func scan(scanner:Scanner) -> MonthDay?
 	{
@@ -404,16 +426,20 @@ struct MonthDay: ParseElement {
 			if let day = scanner.scanInt() {
 				// "Apr 5"
 				return MonthDay(year: year, month: mon, day: day)
-			} else {
-				return MonthDay(year: year, month: mon, day: nil)
 			}
+			if let nthWeekday = NthWeekday.scan(scanner: scanner) {
+				// "Apr Fri[-1]"
+				return MonthDay(year: year, month: mon, day: nil, nthWeekday: nthWeekday)
+			}
+			return MonthDay(year: year, month: mon, day: nil)
 		}
 		scanner.currentIndex = index
 		return nil
 	}
 
 	func toString() -> String {
-		let a = [year?.toString(), month.toString(), day == nil ? nil : "\(day!)"]
+		let d = day != nil ? "\(day!)" : nthWeekday != nil ? nthWeekday!.toString() : nil
+		let a = [year?.toString(), month.toString(), d]
 		return OpeningHours.toString(list: a, delimeter: " ")
 	}
 }
@@ -481,7 +507,8 @@ struct NthEntry: ParseElement {
 			let index2 = scanner.currentIndex
 			if scanner.scanDash() != nil,
 			   let end = scanner.scanInt(),
-			   inRange(end)
+			   inRange(end),
+			   begin > 0 && end > 0
 			{
 				return NthEntry(begin: begin, end: end)
 			}
@@ -523,8 +550,8 @@ struct NthEntryList: ParseElement {
 // "Mo-Fr" or "Mo[-1]" or "PH"
 enum DayRange: ParseElement {
 	case holiday(Holiday)
-	case weekday(Day,NthEntryList?)
-	case weekdays(Day,Day)
+	case weekday(Weekday,NthEntryList?)
+	case weekdays(Weekday,Weekday)
 
 	static let defaultValue = DayRange.weekdays(.Mo, .Su)
 
@@ -533,10 +560,10 @@ enum DayRange: ParseElement {
 		if let holiday = Holiday.scan(scanner: scanner) {
 			return DayRange.holiday(holiday)
 		}
-		if let firstDay = Day.scan(scanner: scanner) {
+		if let firstDay = Weekday.scan(scanner: scanner) {
 			let index = scanner.currentIndex
 			if scanner.scanDash() != nil,
-			   let lastDay = Day.scan(scanner: scanner)
+			   let lastDay = Weekday.scan(scanner: scanner)
 			{
 				return DayRange.weekdays(firstDay, lastDay)
 			}
@@ -725,11 +752,11 @@ struct DaysHours: ParseElement {
 
 	static func dayRangesForWeekdaysSet( _ set: Set<Int> ) -> [DayRange] {
 		var newrange = [DayRange]()
-		var range: (Day,Day)? = nil
+		var range: (Weekday,Weekday)? = nil
 
 		for d in 0..<7 {
 			if set.contains(d) {
-				let day = Day(rawValue: d)!
+				let day = Weekday(rawValue: d)!
 				if let (begin,end) = range,
 				   end.rawValue+1 == d
 				{

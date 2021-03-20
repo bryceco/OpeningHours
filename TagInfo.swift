@@ -14,9 +14,9 @@ class TagInfo : Codable {
 	init() {
 		self.restore()
 
-		#if true
+		#if false
 		repeat {
-			let s = "Th[1] off, PH off"
+			let s = "Apr Fr[-1] - Sep 30 00:00-24:00"
 			let v = OpenHours.init(fromString: s)
 			v.printErrorMessage()
 		} while true
