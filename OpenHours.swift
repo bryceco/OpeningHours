@@ -68,36 +68,6 @@ extension Scanner {
 	}
 }
 
-func parseList<T:ParseElement>(scanner:Scanner, delimiters:[String]) -> ([T],[String])?
-{
-	var list = [T]()
-	var delims = [String]()
-	var delimiterIndex: String.Index? = nil
-
-	mainLoop: do {
-		guard let item = T.scan(scanner:scanner) else {
-			// back up to before preceding comma
-			if let delimiterIndex = delimiterIndex {
-				scanner.currentIndex = delimiterIndex
-				return (list,delims)
-			} else {
-				return nil
-			}
-		}
-
-		list.append(item)
-		delimiterIndex = scanner.currentIndex
-
-		if let d = delimiters.first(where: { scanner.scanString($0) != nil	}) {
-			delims.append(d)
-			continue mainLoop
-		}
-		break mainLoop
-	}
-
-	return (list,delims)
-}
-
 func parseList<T:ParseElement>(scanner:Scanner, delimiter:String) -> [T]?
 {
 	var list = [T]()
@@ -120,17 +90,18 @@ func parseList<T:ParseElement>(scanner:Scanner, delimiter:String) -> [T]?
 	return list
 }
 
-func toString(list: [String?], delimeter:String) -> String
+func stringListToString(list: [String?], delimeter:String) -> String
 {
 	return list.reduce("") { result, next in
-		if let next = next {
+		if let next = next,
+		   next.count > 0 {
 			return result == "" ? next : result + delimeter + next
 		} else {
 			return result
 		}
 	}
 }
-func toString<T:ParseElement>(list: [T], delimeter:String) -> String
+func elementListToString<T:ParseElement>(list: [T], delimeter:String) -> String
 {
 	return list.reduce("") { result, next in
 		return result == "" ? next.toString() : result + delimeter + next.toString()
@@ -440,7 +411,7 @@ struct MonthDay: ParseElement {
 	func toString() -> String {
 		let d = day != nil ? "\(day!)" : nthWeekday != nil ? nthWeekday!.toString() : nil
 		let a = [year?.toString(), month.toString(), d]
-		return OpeningHours.toString(list: a, delimeter: " ")
+		return OpeningHours.stringListToString(list: a, delimeter: " ")
 	}
 }
 
@@ -448,7 +419,7 @@ struct MonthDay: ParseElement {
 struct HourRange: ParseElement {
 
 	public var begin : Hour
-	public var end : Hour
+	public var end : Hour?
 	public var plus : Bool
 
 	static let defaultValue = HourRange(begin: Hour.time(10*60), end: Hour.time(18*60), plus: false)
@@ -473,17 +444,17 @@ struct HourRange: ParseElement {
 
 	func toString() -> String
 	{
-		if begin == end {
-			return "\(begin.toString())\(plus ?"+":"")"
-		} else {
+		if let end = end {
 			return "\(begin.toString())-\(end.toString())\(plus ?"+":"")"
+		} else {
+			return "\(begin.toString())\(plus ?"+":"")"
 		}
 	}
 
 	func is24Hour() -> Bool {
 		if let begin = begin.toMinute(),
 		   begin == 0,
-		   let end = end.toMinute(),
+		   let end = end?.toMinute(),
 		   end == 24*60
 		{
 			return true
@@ -543,7 +514,7 @@ struct NthEntryList: ParseElement {
 		return nil
 	}
 	func toString() -> String {
-		return OpeningHours.toString(list: list, delimeter: ",")
+		return OpeningHours.elementListToString(list: list, delimeter: ",")
 	}
 }
 
@@ -684,6 +655,17 @@ struct DaysHours: ParseElement {
 						 hours: hours)
 	}
 
+
+	func toString() -> String {
+		let days = OpeningHours.elementListToString(list: weekdays, delimeter: ",")
+		let holi = OpeningHours.elementListToString(list: holidays, delimeter: ",")
+		let filter = OpeningHours.elementListToString(list: holidayFilter, delimeter: ",")
+		let hrs = OpeningHours.elementListToString(list: hours, delimeter: ",")
+
+		let days2 = OpeningHours.stringListToString(list: [holi,days], delimeter: ",")
+		return OpeningHours.stringListToString(list: [filter,days2,hrs], delimeter: " ")
+	}
+
 	static let defaultValue = DaysHours(weekdays: [DayRange.defaultValue],
 										holidays: [],
 										holidayFilter: [],
@@ -794,11 +776,24 @@ struct DaysHours: ParseElement {
 		}
 		self.weekdays = DaysHours.dayRangesForWeekdaysSet(set)
 	}
+}
+
+enum RuleSeperator: String, CaseIterable, ParseElement {
+	case semiColon = ";"
+	case comma = ","
+	case doubleBar = "||"
+
+	static func scan(scanner: Scanner) -> RuleSeperator? {
+		for item in RuleSeperator.allCases {
+			if scanner.scanString(item.rawValue) != nil {
+				return item
+			}
+		}
+		return nil
+	}
 
 	func toString() -> String {
-		let s1 = OpeningHours.toString(list: weekdays, delimeter: ",")
-		let s2 = OpeningHours.toString(list: hours, delimeter: ",")
-		return s1.count > 0 && s2.count > 0 ? s1+" "+s2 : s1+s2
+		return self.rawValue + " "
 	}
 }
 
@@ -810,6 +805,7 @@ struct MonthsDaysHours: ParseElement {
 	var daysHours: [DaysHours]
 	var modifier : Modifier?
 	var comment : Comment?
+	var ruleSeperator : RuleSeperator?
 
 	static func scan(scanner:Scanner) -> MonthsDaysHours?
 	{
@@ -821,11 +817,34 @@ struct MonthsDaysHours: ParseElement {
 		if months.count == 0 && daysHours.count == 0 && modifier == nil && comment == nil {
 			return nil
 		}
+		let ruleSeperator = RuleSeperator.scan(scanner: scanner)
 		return MonthsDaysHours(months: months,
 							   readabilitySeperator: readabilitySeperator,
 							   daysHours: daysHours,
 							   modifier: modifier,
-							   comment: comment)
+							   comment: comment,
+							   ruleSeperator: ruleSeperator)
+	}
+
+	func toString() -> String {
+		return toString(withRuleSeperator:true)
+	}
+	func toString(withRuleSeperator:Bool) -> String {
+		if is24_7() {
+			return "24/7"
+		}
+		let m = OpeningHours.elementListToString(list: months, delimeter: ",")
+		let dh = OpeningHours.elementListToString(list: daysHours, delimeter: ", ")
+		let a = [m,
+				 readabilitySeperator,
+				 dh,
+				 modifier?.toString(),
+				 comment?.toString()]
+		var r = OpeningHours.stringListToString(list: a, delimeter: " ")
+		if withRuleSeperator {
+			r += ruleSeperator?.toString() ?? ""
+		}
+		return r
 	}
 
 	func is24_7() -> Bool {
@@ -862,59 +881,36 @@ struct MonthsDaysHours: ParseElement {
 	mutating func deleteDaysHours(at index:Int) -> Void {
 		daysHours.remove(at: index)
 	}
-
-	func toString() -> String {
-		if is24_7() {
-			return "24/7"
-		}
-		let s1 = OpeningHours.toString(list: months, delimeter: ",")
-		let s2 = OpeningHours.toString(list: daysHours, delimeter: ", ")
-		let r = s1.count > 0 && s2.count > 0 ? s1+" "+s2 : s1+s2
-		return r
-	}
 }
 
 struct RuleList: ParseElement {
 	var rules : [MonthsDaysHours]
-	var seperators : [String]
 
 	static func scan(scanner: Scanner) -> RuleList? {
-		if let (list,delims) : ([MonthsDaysHours], [String]) = parseList(scanner: scanner, delimiters: [";",",","||"] ) {
-			return RuleList(rules: list, seperators: delims)
+		if let list : [MonthsDaysHours] = parseList(scanner: scanner, delimiter: "" ) {
+			return RuleList(rules: list)
 		}
 		return nil
 	}
 
 	func toString() -> String {
 		var s = ""
-		for index in self.rules.indices {
-			if index > 0 {
-				s += self.seperators[index-1]
-			}
-			s += self.rules[index].toString()
+		for index in rules.indices {
+			let i = rules[index].toString(withRuleSeperator: index < rules.count-1)
+			s += i
 		}
 		return s
 	}
 
-	static let emptyValue = RuleList(rules: [], seperators: [])
+	static let emptyValue = RuleList(rules: [])
 
-	mutating func deleteMonthDayHours(at index:Int) -> Void {
-		rules.remove(at: index)
-		if index < seperators.count-1 {
-			seperators.remove(at: index)
-		}
-		assert(rules.count == 0 || seperators.count+1 == rules.count)
-	}
-	mutating func addMonthDayHours() -> Void {
+	mutating func appendMonthDayHours() -> Void {
 		rules.append(MonthsDaysHours(months: [],
-									  daysHours: [DaysHours(weekdays: [DayRange.defaultValue],
-															holidays: [],
-															holidayFilter: [],
-															hours: [HourRange.defaultValue])]))
-		if rules.count >= 2 {
-			seperators.append(";")
-		}
-		assert(seperators.count+1 == rules.count)
+									 daysHours: [DaysHours(weekdays: [DayRange.defaultValue],
+														   holidays: [],
+														   holidayFilter: [],
+														   hours: [HourRange.defaultValue])],
+									 ruleSeperator: .semiColon))
 	}
 }
 
@@ -964,14 +960,8 @@ class OpenHours: ObservableObject, CustomStringConvertible {
 		return (nil,scanner.currentIndex)
 	}
 
-	func deleteMonthDayHours(at index:Int) -> Void {
-		self.ruleList.deleteMonthDayHours(at: index)
-		if ruleList.rules.count == 0 {
-			textual = ""
-		}
-	}
 	func addMonthDayHours() -> Void {
-		self.ruleList.addMonthDayHours()
+		self.ruleList.appendMonthDayHours()
 	}
 
 	func toString() -> String {

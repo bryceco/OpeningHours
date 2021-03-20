@@ -34,15 +34,16 @@ class TagInfo : Codable {
 				for _ in 1...10 {
 					_ = OpenHours(fromString: value)
 				}
+				print("")
 				continue
 			}
 			let s = hours.toString()
-			let unSpaced1 = value.replacingOccurrences(of: ";", with: ",").replacingOccurrences(of: ", ", with: ",")
-			let unSpaced2 = value.replacingOccurrences(of: ";", with: ",").replacingOccurrences(of: ", ", with: ",")
+			let unSpaced1 = value.replacingOccurrences(of: ";", with: ",").replacingOccurrences(of: ", ", with: ",").replacingOccurrences(of: " ", with: "")
+			let unSpaced2 = s.replacingOccurrences(of: ";", with: ",").replacingOccurrences(of: ", ", with: ",").replacingOccurrences(of: " ", with: "")
 			if unSpaced1 != unSpaced2 {
-				print("\(index): \(value) --> \(s)")
-				_ = OpenHours(fromString: value)
-				_ = hours.toString()
+				print("\(value)")
+				print("\(s)")
+				print("")
 			}
 		}
 		print("bad percentage = \(100.0*Double(badCnt)/Double(self.values.count))")
