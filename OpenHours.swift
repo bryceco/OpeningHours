@@ -169,28 +169,38 @@ enum Hour: CaseIterable, ParseElement {
 		}
 	}
 
-	static let minuteSeperators = CharacterSet(charactersIn: ":_")
+	static let minuteSeperators = CharacterSet(charactersIn: ":_.")
 	static func scan(scanner:Scanner) -> Hour?
 	{
 		let index = scanner.currentIndex
 		let skipped = scanner.charactersToBeSkipped
+		defer { scanner.charactersToBeSkipped = skipped }
 		scanner.charactersToBeSkipped = nil
 		_ = scanner.scanCharacters(from: CharacterSet.whitespacesAndNewlines)
 
 		// 12:00 etc.
 		if let hour = scanner.scanInt(),
-		   scanner.scanCharacters(from: minuteSeperators)?.count == 1,
-		   let minute = scanner.scanInt()
+		   hour >= 0 && hour <= 24
 		{
-			var PM = 0
 			if scanner.scanWord("AM") != nil {
-				// ignore
-			} else if scanner.scanWord("PM") != nil {
-				PM = 60*12
+				return .time((hour%12)*60)
 			}
-			scanner.charactersToBeSkipped = skipped
-			return .time(hour*60+minute + PM)
-		} else {
+			if scanner.scanWord("PM") != nil {
+				return .time((12+(hour%12))*60)
+			}
+
+			if scanner.scanCharacters(from: minuteSeperators)?.count == 1,
+			   let minute = scanner.scanInt()
+			{
+				scanner.charactersToBeSkipped = skipped
+				if scanner.scanWord("AM") != nil {
+					return .time((hour%12)*60+minute)
+				}
+				if scanner.scanWord("PM") != nil {
+					return .time((12+hour%12)*60+minute)
+				}
+				return .time(hour*60+minute)
+			}
 			scanner.currentIndex = index
 		}
 		scanner.charactersToBeSkipped = skipped
