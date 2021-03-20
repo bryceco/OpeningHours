@@ -176,17 +176,26 @@ enum Hour: CaseIterable, ParseElement {
 		let skipped = scanner.charactersToBeSkipped
 		scanner.charactersToBeSkipped = nil
 		_ = scanner.scanCharacters(from: CharacterSet.whitespacesAndNewlines)
+
+		// 12:00 etc.
 		if let hour = scanner.scanInt(),
 		   scanner.scanCharacters(from: minuteSeperators)?.count == 1,
 		   let minute = scanner.scanInt()
 		{
+			var PM = 0
+			if scanner.scanWord("AM") != nil {
+				// ignore
+			} else if scanner.scanWord("PM") != nil {
+				PM = 60*12
+			}
 			scanner.charactersToBeSkipped = skipped
-			return .time(hour*60+minute)
+			return .time(hour*60+minute + PM)
 		} else {
 			scanner.currentIndex = index
 		}
 		scanner.charactersToBeSkipped = skipped
 
+		// named times
 		if scanner.scanWord("sunrise") != nil {
 			return .sunrise
 		}
@@ -471,12 +480,14 @@ struct HourRange: ParseElement {
 			if scanner.scanDash() != nil,
 			   let lastHour = Hour.scan(scanner: scanner)
 			{
+				// 10:00-14:00
 				let plus = scanner.scanString("+") != nil
 				return HourRange(begin: firstHour, end: lastHour, plus: plus)
 			}
 			scanner.currentIndex = index
+			// 12:00
 			let plus = scanner.scanString("+") != nil
-			return HourRange(begin: firstHour, end: firstHour, plus: plus)
+			return HourRange(begin: firstHour, end: Hour.none, plus: plus)
 		}
 		return nil
 	}
