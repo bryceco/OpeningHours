@@ -309,9 +309,9 @@ struct ContentView: View {
 		ScrollView {
 			TextField("opening_hours", value: $dateRanges.string, formatter: formatter)
 				.textFieldStyle(RoundedBorderTextFieldStyle())
-			ForEach(dateRanges.groups.indices, id: \.self) { groupIndex in
-				SafeBinding($dateRanges.groups, index: groupIndex) { group in
-					MonthsDaysHoursView(groupList: $dateRanges.groups, group: group)
+			ForEach(dateRanges.ruleList.rules.indices, id: \.self) { groupIndex in
+				SafeBinding($dateRanges.ruleList.rules, index: groupIndex) { group in
+					MonthsDaysHoursView(groupList: $dateRanges.ruleList.rules, group: group)
 					.padding()
 				}
 			}

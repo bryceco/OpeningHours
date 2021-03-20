@@ -14,9 +14,9 @@ class TagInfo : Codable {
 	init() {
 		self.restore()
 
-		#if false
+		#if true
 		repeat {
-			let s = "Apr 1-Oct 31: \"needs reservation by phone or web\""
+			let s = "Th[1] off, PH off"
 			let v = OpenHours.init(fromString: s)
 			v.printErrorMessage()
 		} while true
@@ -27,7 +27,7 @@ class TagInfo : Codable {
 			let value = self.values[index]
 
 			let hours = OpenHours(fromString: value)
-			if hours.groups.count == 0 {
+			if hours.ruleList.rules.count == 0 {
 				print("\(index):")
 				hours.printErrorMessage()
 				badCnt += 1
