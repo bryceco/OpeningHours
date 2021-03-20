@@ -305,7 +305,7 @@ enum Weekday: Int, CaseIterable, ParseElement {
 	}
 
 	func toString() -> String {
-		return Weekday.synonyms[self.rawValue][0]
+		return String(Weekday.synonyms[self.rawValue][0].prefix(2))
 	}
 }
 
