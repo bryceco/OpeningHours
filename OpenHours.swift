@@ -987,7 +987,7 @@ struct MonthsDaysHours: ParseElement {
 
 	static func scan(scanner:Scanner) -> MonthsDaysHours?
 	{
-		let months : [MonthDayRange] = parseList(scanner: scanner, scan: MonthDayRange.scan, delimiter: ",") ?? []
+		let months : [MonthDayRange] = MonthDayRangeList.scan(scanner: scanner) ?? []
 		let readabilitySeperator = scanner.scanString(":")
 		let daysHours : [DaysHours] = parseList(scanner: scanner, scan: DaysHours.scan, delimiter: ",") ?? []
 		let modifier = Modifier.scan(scanner: scanner)
