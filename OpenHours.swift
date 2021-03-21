@@ -193,7 +193,7 @@ enum Hour: CaseIterable, ParseElement {
 		}
 	}
 
-	static let minuteSeperators = CharacterSet(charactersIn: ":_.")
+	static let minuteSeparators = CharacterSet(charactersIn: ":_.")
 	static func scan(scanner:Scanner) -> Hour?
 	{
 		let index = scanner.currentIndex
@@ -207,7 +207,7 @@ enum Hour: CaseIterable, ParseElement {
 		   hour >= 0 && hour <= 24
 		{
 			let index2 = scanner.currentIndex
-			if scanner.scanCharacters(from: minuteSeperators)?.count == 1,
+			if scanner.scanCharacters(from: minuteSeparators)?.count == 1,
 			   let minute = scanner.scanInt(),
 			   minute >= 0 && minute < 60
 			{
@@ -639,12 +639,18 @@ enum WeekdayRange: ParseElement {
 	case weekday(Weekday,NthEntryList?)
 	case weekdays(Weekday,Weekday)
 
-	static let defaultValue = WeekdayRange.weekdays(.Mo, .Su)
+	static let everyWeekday = WeekdayRange.weekdays(.Mo, .Su)
 
 	static func scan(scanner:Scanner) -> WeekdayRange?
 	{
 		if let holiday = Holiday.scan(scanner: scanner) {
 			return WeekdayRange.holiday(holiday)
+		}
+		if scanner.scanString("Every Day") != nil ||
+			scanner.scanString("Everyday") != nil ||
+			scanner.scanString("Daily") != nil
+		{
+			return everyWeekday
 		}
 		if let firstDay = Weekday.scan(scanner: scanner) {
 			let index = scanner.currentIndex
@@ -802,7 +808,7 @@ struct DaysHours: ParseElement {
 		let weekdays : [WeekdayRange] = parseList(scanner: scanner, scan: WeekdayRange.scan, delimiter: ",") ?? []
 		let comma2 = weekdays.count > 0 && scanner.scanString(",") != nil
 		let holidays2 : [Holiday] = parseList(scanner: scanner, scan:Holiday.scan, delimiter: ",") ?? []
-
+		_ = scanner.scanString(":")	// misplaced readability separator
 		let hours : [HourRange] = parseList(scanner: scanner, scan: HourRange.scan, delimiter: ",") ?? []
 		if weekdays.count == 0 && holidays1.count == 0 && holidays2.count == 0 && hours.count == 0 {
 			return nil
@@ -844,7 +850,7 @@ struct DaysHours: ParseElement {
 		return OpeningHours.stringListToString(list: [filter,days2,hrs], delimeter: " ")
 	}
 
-	static let defaultValue = DaysHours(weekdays: [WeekdayRange.defaultValue],
+	static let defaultValue = DaysHours(weekdays: [WeekdayRange.everyWeekday],
 										holidays: [],
 										holidayFilter: [],
 										hours: [HourRange.defaultValue])
@@ -956,13 +962,13 @@ struct DaysHours: ParseElement {
 	}
 }
 
-enum RuleSeperator: String, CaseIterable, ParseElement {
+enum RuleSeparator: String, CaseIterable, ParseElement {
 	case semiColon = ";"
 	case comma = ","
 	case doubleBar = "||"
 
-	static func scan(scanner: Scanner) -> RuleSeperator? {
-		for item in RuleSeperator.allCases {
+	static func scan(scanner: Scanner) -> RuleSeparator? {
+		for item in RuleSeparator.allCases {
 			if scanner.scanString(item.rawValue) != nil {
 				return item
 			}
@@ -979,48 +985,48 @@ enum RuleSeperator: String, CaseIterable, ParseElement {
 struct MonthsDaysHours: ParseElement {
 
 	var months: [MonthDayRange]
-	var readabilitySeperator: String?
+	var readabilitySeparator: String?
 	var daysHours: [DaysHours]
 	var modifier : Modifier?
 	var comment : Comment?
-	var ruleSeperator : RuleSeperator?
+	var ruleSeparator : RuleSeparator?
 
 	static func scan(scanner:Scanner) -> MonthsDaysHours?
 	{
 		let months : [MonthDayRange] = MonthDayRangeList.scan(scanner: scanner) ?? []
-		let readabilitySeperator = scanner.scanString(":")
+		let readabilitySeparator = scanner.scanString(":")
 		let daysHours : [DaysHours] = parseList(scanner: scanner, scan: DaysHours.scan, delimiter: ",") ?? []
 		let modifier = Modifier.scan(scanner: scanner)
 		let comment = Comment.scan(scanner: scanner)
 		if months.count == 0 && daysHours.count == 0 && modifier == nil && comment == nil {
 			return nil
 		}
-		let ruleSeperator = RuleSeperator.scan(scanner: scanner)
+		let ruleSeparator = RuleSeparator.scan(scanner: scanner)
 		return MonthsDaysHours(months: months,
-							   readabilitySeperator: readabilitySeperator,
+							   readabilitySeparator: readabilitySeparator,
 							   daysHours: daysHours,
 							   modifier: modifier,
 							   comment: comment,
-							   ruleSeperator: ruleSeperator)
+							   ruleSeparator: ruleSeparator)
 	}
 
 	func toString() -> String {
-		return toString(withRuleSeperator:true)
+		return toString(withRuleSeparator:true)
 	}
-	func toString(withRuleSeperator:Bool) -> String {
+	func toString(withRuleSeparator:Bool) -> String {
 		if is24_7() {
 			return "24/7"
 		}
 		let m = OpeningHours.elementListToString(list: months, delimeter: ",")
 		let dh = OpeningHours.elementListToString(list: daysHours, delimeter: ", ")
 		let a = [m,
-				 readabilitySeperator,
+				 readabilitySeparator,
 				 dh,
 				 modifier?.toString(),
 				 comment?.toString()]
 		var r = OpeningHours.stringListToString(list: a, delimeter: " ")
-		if withRuleSeperator {
-			r += ruleSeperator?.toString() ?? ""
+		if withRuleSeparator {
+			r += ruleSeparator?.toString() ?? ""
 		}
 		return r
 	}
@@ -1074,7 +1080,7 @@ struct RuleList: ParseElement {
 	func toString() -> String {
 		var s = ""
 		for index in rules.indices {
-			let i = rules[index].toString(withRuleSeperator: index < rules.count-1)
+			let i = rules[index].toString(withRuleSeparator: index < rules.count-1)
 			s += i
 		}
 		return s
@@ -1084,11 +1090,11 @@ struct RuleList: ParseElement {
 
 	mutating func appendMonthDayHours() -> Void {
 		rules.append(MonthsDaysHours(months: [],
-									 daysHours: [DaysHours(weekdays: [WeekdayRange.defaultValue],
+									 daysHours: [DaysHours(weekdays: [WeekdayRange.everyWeekday],
 														   holidays: [],
 														   holidayFilter: [],
 														   hours: [HourRange.defaultValue])],
-									 ruleSeperator: .semiColon))
+									 ruleSeparator: .semiColon))
 	}
 }
 
