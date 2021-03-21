@@ -16,7 +16,7 @@ class TagInfo : Codable {
 
 		#if false
 		repeat {
-			let s = "Apr Fr[-1] - Sep 30 00:00-24:00"
+			let s = "8:15 am - 9 pm"
 			let v = OpenHours.init(fromString: s)
 			v.printErrorMessage()
 		} while true
@@ -40,7 +40,7 @@ class TagInfo : Codable {
 			let s = hours.toString()
 			let unSpaced1 = value.replacingOccurrences(of: ";", with: ",").replacingOccurrences(of: ", ", with: ",").replacingOccurrences(of: " ", with: "")
 			let unSpaced2 = s.replacingOccurrences(of: ";", with: ",").replacingOccurrences(of: ", ", with: ",").replacingOccurrences(of: " ", with: "")
-			if unSpaced1 != unSpaced2 {
+			if false && unSpaced1 != unSpaced2 {
 				print("\(value)")
 				print("\(s)")
 				print("")

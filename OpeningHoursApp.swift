@@ -10,7 +10,7 @@ import SwiftUI
 @main
 struct OpeningHoursApp: App {
 
-	// let tagInfo = TagInfo()
+	let tagInfo = TagInfo()
 
     var body: some Scene {
         WindowGroup {

@@ -182,13 +182,7 @@ enum Hour: CaseIterable, ParseElement {
 		if let hour = scanner.scanInt(),
 		   hour >= 0 && hour <= 24
 		{
-			if scanner.scanWord("AM") != nil {
-				return .time((hour%12)*60)
-			}
-			if scanner.scanWord("PM") != nil {
-				return .time((12+(hour%12))*60)
-			}
-
+			let index2 = scanner.currentIndex
 			if scanner.scanCharacters(from: minuteSeperators)?.count == 1,
 			   let minute = scanner.scanInt()
 			{
@@ -201,8 +195,17 @@ enum Hour: CaseIterable, ParseElement {
 				}
 				return .time(hour*60+minute)
 			}
-			scanner.currentIndex = index
+
+			scanner.charactersToBeSkipped = skipped
+			scanner.currentIndex = index2
+			if scanner.scanWord("AM") != nil {
+				return .time((hour%12)*60)
+			}
+			if scanner.scanWord("PM") != nil {
+				return .time((12+(hour%12))*60)
+			}
 		}
+		scanner.currentIndex = index
 		scanner.charactersToBeSkipped = skipped
 
 		// named times
@@ -669,13 +672,18 @@ struct DaysHours: ParseElement {
 
 	static let everyDay:Set<Int> = [0,1,2,3,4,5,6]
 
+	static let all247 = [ "24/7",
+						  "24 hours",
+						  "24hr",
+						  "All day",
+	]
+
 	static func scan(scanner: Scanner) -> DaysHours?
 	{
-		if scanner.scanString("24/7") != nil ||
-			scanner.scanString("24 hours") != nil ||
-			scanner.scanString("24") != nil
-		{
-			return DaysHours.hours_24_7
+		for text in all247 {
+			if scanner.scanString(text) != nil {
+				return DaysHours.hours_24_7
+			}
 		}
 
 		// holidays are supposed to come first, but we support either order:
