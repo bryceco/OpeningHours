@@ -97,7 +97,7 @@ struct HourPickerModal: View {
 					.clipped()
 
 					Text(":")
-					
+
 					Picker("", selection: $temp.minuteBinding, content: { // <2>
 						ForEach(0...11, id:\.self) { minute in
 							Text("\(String(format: "%02d", 5*minute))")
@@ -150,8 +150,7 @@ struct MonthDayPickerModal: View {
 		self._temp = State(initialValue: monthDay.wrappedValue)
 	}
 
-	private let dayCases:[Int?] = [nil,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
-								   16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
+	private let dayCases = [nil] + Array(1...31).map { Day($0) }
 
 	var body: some View {
 
@@ -169,7 +168,7 @@ struct MonthDayPickerModal: View {
 				Picker("", selection: $temp.day, content: { // <2>
 					Text(" ")
 					ForEach(dayCases, id:\.self) { day in
-						Text(day == nil ? " " : "\(day!)")
+						Text(day == nil ? " " : day!.toString())
 					}
 				})
 				.frame(width: 80)

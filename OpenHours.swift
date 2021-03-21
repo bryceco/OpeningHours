@@ -187,7 +187,8 @@ enum Hour: CaseIterable, ParseElement {
 		{
 			let index2 = scanner.currentIndex
 			if scanner.scanCharacters(from: minuteSeperators)?.count == 1,
-			   let minute = scanner.scanInt()
+			   let minute = scanner.scanInt(),
+			   minute >= 0 && minute < 60
 			{
 				scanner.charactersToBeSkipped = skipped
 				if scanner.scanWord("AM") != nil {
@@ -384,6 +385,33 @@ struct NthWeekday: ParseElement {
 	}
 }
 
+// "23"
+struct Day : ParseElement {
+	var day : Int
+
+	init?(_ d:Int) {
+		if d < 1 || d > 31 {
+			return nil
+		}
+		self.day = d
+	}
+
+	static func scan(scanner: Scanner) -> Day? {
+		let index = scanner.currentIndex
+		if let d = scanner.scanInt(),
+		   d >= 1 && d <= 31
+		{
+			return Day(d)
+		}
+		scanner.currentIndex = index
+		return nil
+	}
+
+	func toString() -> String {
+		return "\(self.day)"
+	}
+}
+
 // "Jan"
 enum Month : Int, CaseIterable, ParseElement {
 	case Jan
@@ -444,7 +472,7 @@ struct Year: ParseElement, Hashable, Equatable {
 struct MonthDay: ParseElement {
 	var year: Year?
 	var month: Month
-	var day: Int?					// day and nthWeekday are mutually exclusive
+	var day: Day?					// day and nthWeekday are mutually exclusive
 	var nthWeekday: NthWeekday?
 
 	static func scan(scanner:Scanner) -> MonthDay?
@@ -458,7 +486,7 @@ struct MonthDay: ParseElement {
 				scanner.currentIndex = index2
 				return MonthDay(year: year, month: mon, day: nil)
 			}
-			if let day = scanner.scanInt() {
+			if let day = Day.scan(scanner: scanner) {
 				// "Apr 5"
 				return MonthDay(year: year, month: mon, day: day)
 			}
@@ -585,28 +613,28 @@ struct NthEntryList: ParseElement {
 }
 
 // "Mo-Fr" or "Mo[-1]" or "PH"
-enum DayRange: ParseElement {
+enum WeekdayRange: ParseElement {
 	case holiday(Holiday)
 	case weekday(Weekday,NthEntryList?)
 	case weekdays(Weekday,Weekday)
 
-	static let defaultValue = DayRange.weekdays(.Mo, .Su)
+	static let defaultValue = WeekdayRange.weekdays(.Mo, .Su)
 
-	static func scan(scanner:Scanner) -> DayRange?
+	static func scan(scanner:Scanner) -> WeekdayRange?
 	{
 		if let holiday = Holiday.scan(scanner: scanner) {
-			return DayRange.holiday(holiday)
+			return WeekdayRange.holiday(holiday)
 		}
 		if let firstDay = Weekday.scan(scanner: scanner) {
 			let index = scanner.currentIndex
 			if scanner.scanDash() != nil,
 			   let lastDay = Weekday.scan(scanner: scanner)
 			{
-				return DayRange.weekdays(firstDay, lastDay)
+				return WeekdayRange.weekdays(firstDay, lastDay)
 			}
 			scanner.currentIndex = index
 			let nth = NthEntryList.scan(scanner: scanner)
-			return DayRange.weekday(firstDay, nth)
+			return WeekdayRange.weekday(firstDay, nth)
 		}
 		return nil
 	}
@@ -639,7 +667,7 @@ struct MonthDayRange: ParseElement {
 			let dashIndex = scanner.currentIndex
 			if scanner.scanDash() != nil {
 				if first.day != nil,
-				   let day = scanner.scanInt()
+				   let day = Day.scan(scanner: scanner)
 				{
 					// "Apr 5-10"
 					let last = MonthDay(month: first.month, day: day)
@@ -684,7 +712,7 @@ struct MonthDayRange: ParseElement {
 // "Mo-Fr 6:00-18:00, Sa,Su 6:00-12:00"
 struct DaysHours: ParseElement {
 
-	var weekdays : [DayRange]
+	var weekdays : [WeekdayRange]
 	var holidays : [Holiday]
 	var holidayFilter : [Holiday] // for space-seperated days: "PH Sa-Su" (i.e. holidays that fall on a weekend)
 	var hours : [HourRange]
@@ -712,7 +740,7 @@ struct DaysHours: ParseElement {
 		// holidays are supposed to come first, but we support either order:
 		let holidays1 : [Holiday] = parseList(scanner: scanner, delimiter: ",") ?? []
 		let comma1 = holidays1.count > 0 && scanner.scanString(",") != nil
-		let weekdays : [DayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let weekdays : [WeekdayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
 		let comma2 = weekdays.count > 0 && scanner.scanString(",") != nil
 		let holidays2 : [Holiday] = parseList(scanner: scanner, delimiter: ",") ?? []
 
@@ -757,7 +785,7 @@ struct DaysHours: ParseElement {
 		return OpeningHours.stringListToString(list: [filter,days2,hrs], delimeter: " ")
 	}
 
-	static let defaultValue = DaysHours(weekdays: [DayRange.defaultValue],
+	static let defaultValue = DaysHours(weekdays: [WeekdayRange.defaultValue],
 										holidays: [],
 										holidayFilter: [],
 										hours: [HourRange.defaultValue])
@@ -784,7 +812,7 @@ struct DaysHours: ParseElement {
 		hours.remove(at: index)
 	}
 
-	static func weekdaysSet(days:[DayRange]) -> Set<Int> {
+	static func weekdaysSet(days:[WeekdayRange]) -> Set<Int> {
 		var set = Set<Int>()
 		for dayRange in days {
 			switch dayRange {
@@ -801,7 +829,7 @@ struct DaysHours: ParseElement {
 		return set
 	}
 
-	static func holidaysSet(days:[DayRange]) -> Set<Holiday> {
+	static func holidaysSet(days:[WeekdayRange]) -> Set<Holiday> {
 		var set = Set<Holiday>()
 		for day in days {
 			switch day {
@@ -823,8 +851,8 @@ struct DaysHours: ParseElement {
 		return DaysHours.holidaysSet(days:weekdays)
 	}
 
-	static func dayRangesForWeekdaysSet( _ set: Set<Int> ) -> [DayRange] {
-		var newrange = [DayRange]()
+	static func dayRangesForWeekdaysSet( _ set: Set<Int> ) -> [WeekdayRange] {
+		var newrange = [WeekdayRange]()
 		var range: (Weekday,Weekday)? = nil
 
 		for d in 0..<7 {
@@ -838,14 +866,14 @@ struct DaysHours: ParseElement {
 				} else {
 					// start a new range
 					if let (begin,end) = range {
-						newrange.append(DayRange.weekdays(begin,end))
+						newrange.append(WeekdayRange.weekdays(begin,end))
 					}
 					range = (day,day)
 				}
 			}
 		}
 		if let (begin,end) = range {
-			newrange.append(DayRange.weekdays(begin,end))
+			newrange.append(WeekdayRange.weekdays(begin,end))
 		}
 		return newrange
 	}
@@ -997,7 +1025,7 @@ struct RuleList: ParseElement {
 
 	mutating func appendMonthDayHours() -> Void {
 		rules.append(MonthsDaysHours(months: [],
-									 daysHours: [DaysHours(weekdays: [DayRange.defaultValue],
+									 daysHours: [DaysHours(weekdays: [WeekdayRange.defaultValue],
 														   holidays: [],
 														   holidayFilter: [],
 														   hours: [HourRange.defaultValue])],
