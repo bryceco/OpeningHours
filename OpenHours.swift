@@ -51,10 +51,13 @@ extension Scanner {
 		return nil
 	}
 
-	static let dashCharacters = CharacterSet.init(charactersIn: "-–‐‒–—―~") // - %u2013 %u2010 %u2012 %u2013 %u2014 %u2015
+	static let dashCharacters = CharacterSet.init(charactersIn: "-–‐‒–—―~～") // - %u2013 %u2010 %u2012 %u2013 %u2014 %u2015
 	func scanDash() -> String? {
 		if let dash = self.scanCharacters(from: Scanner.dashCharacters) {
 			// could end up with several dashes in a row but that shouldn't hurt anything
+			return dash
+		}
+		if let dash = self.scanWord("to") {
 			return dash
 		}
 		return nil
@@ -650,6 +653,22 @@ struct MonthDayRange: ParseElement {
 			}
 			return MonthDayRange(begin: first, end: first)
 		}
+		if scanner.scanString("summer") != nil {
+			return MonthDayRange(begin: MonthDay(year: nil, month: Month.Jun, day: nil, nthWeekday: nil),
+								 end: MonthDay(year: nil, month: Month.Aug, day: nil, nthWeekday: nil))
+		}
+		if scanner.scanString("winter") != nil {
+			return MonthDayRange(begin: MonthDay(year: nil, month: Month.Dec, day: nil, nthWeekday: nil),
+								 end: MonthDay(year: nil, month: Month.Feb, day: nil, nthWeekday: nil))
+		}
+		if scanner.scanString("spring") != nil {
+			return MonthDayRange(begin: MonthDay(year: nil, month: Month.Mar, day: nil, nthWeekday: nil),
+								 end: MonthDay(year: nil, month: Month.May, day: nil, nthWeekday: nil))
+		}
+		if scanner.scanString("autumn") != nil {
+			return MonthDayRange(begin: MonthDay(year: nil, month: Month.Sep, day: nil, nthWeekday: nil),
+								 end: MonthDay(year: nil, month: Month.Nov, day: nil, nthWeekday: nil))
+		}
 		return nil
 	}
 
@@ -673,7 +692,11 @@ struct DaysHours: ParseElement {
 	static let everyDay:Set<Int> = [0,1,2,3,4,5,6]
 
 	static let all247 = [ "24/7",
+						  "24x7",
+						  "0-24",
+						  "24 hour",
 						  "24 hours",
+						  "24hours",
 						  "24hr",
 						  "All day",
 	]
