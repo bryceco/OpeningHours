@@ -71,13 +71,28 @@ extension Scanner {
 	}
 }
 
-func parseList<T:ParseElement>(scanner:Scanner, delimiter:String) -> [T]?
+// parses "T-T"
+func parseRange<T>(scanner:Scanner, scan:(Scanner)->T? ) -> (T,T)? {
+	if let first = scan(scanner) {
+		let index = scanner.currentIndex
+		if scanner.scanDash() != nil {
+			if let second = scan(scanner) {
+				return (first,second)
+			}
+			scanner.currentIndex = index
+		}
+		return (first,first)
+	}
+	return nil
+}
+
+// parses "T,T,T"
+func parseList<T>(scanner:Scanner, scan:(Scanner)->T?, delimiter:String) -> [T]?
 {
 	var list = [T]()
 	var delimiterIndex: String.Index? = nil
-
 	repeat {
-		guard let item = T.scan(scanner:scanner) else {
+		guard let item = scan(scanner) else {
 			// back up to before preceding comma
 			if let delimiterIndex = delimiterIndex {
 				scanner.currentIndex = delimiterIndex
@@ -86,11 +101,17 @@ func parseList<T:ParseElement>(scanner:Scanner, delimiter:String) -> [T]?
 				return nil
 			}
 		}
-
 		list.append(item)
 		delimiterIndex = scanner.currentIndex
 	} while scanner.scanString(delimiter) != nil
 	return list
+}
+
+// parses "T-T,T,T-T"
+func parseListRange<T>(scanner: Scanner, scan:(Scanner)->T?, delimiter:String) -> [(T,T)]? {
+	return parseList(scanner: scanner,
+					 scan: { scanner in	return parseRange(scanner: scanner, scan: scan) },
+					 delimiter: delimiter)
 }
 
 func stringListToString(list: [String?], delimeter:String) -> String
@@ -599,7 +620,7 @@ struct NthEntryList: ParseElement {
 	static func scan(scanner: Scanner) -> NthEntryList? {
 		let index = scanner.currentIndex
 		if scanner.scanString("[") != nil,
-		   let list:[NthEntry] = parseList(scanner: scanner, delimiter: ","),
+		   let list:[NthEntry] = parseList(scanner: scanner, scan:NthEntry.scan, delimiter: ","),
 		   scanner.scanString("]") != nil
 		{
 			return NthEntryList(list:list)
@@ -659,7 +680,8 @@ struct MonthDayRange: ParseElement {
 	var begin: MonthDay
 	var end: MonthDay
 
-	static let defaultValue = MonthDayRange(begin: MonthDay(month: .Jan, day: nil), end: MonthDay(month: .Dec, day: nil))
+	static let defaultValue = MonthDayRange(begin: MonthDay(month: .Jan, day: nil),
+											end: MonthDay(month: .Dec, day: nil))
 
 	static func scan(scanner: Scanner) -> MonthDayRange?
 	{
@@ -709,6 +731,43 @@ struct MonthDayRange: ParseElement {
 	}
 }
 
+struct MonthDayRangeList {
+	// this is used just for parsing, though it could easily be converted to a standalone class
+	static func scan(scanner: Scanner) -> [MonthDayRange]? {
+		var list = [MonthDayRange]()
+		var delimiterIndex: String.Index? = nil
+		repeat {
+
+			if let last = list.last,
+			   last.begin.month == last.end.month,
+			   last.begin.day != nil && last.end.day != nil,
+			   last.begin.year == nil,
+			   let days = parseListRange(scanner: scanner, scan: Day.scan, delimiter: ",")
+			{
+				// "Dec 1-5,10-12,25,31"
+				for (begin,end) in days {
+					list.append(MonthDayRange(begin: MonthDay(year: nil, month: last.begin.month, day: begin, nthWeekday: nil),
+											  end: MonthDay(year: nil, month: last.begin.month, day: end, nthWeekday: nil)))
+				}
+			} else {
+				guard let item = MonthDayRange.scan(scanner: scanner) else {
+					// back up to before preceding comma
+					if let delimiterIndex = delimiterIndex {
+						scanner.currentIndex = delimiterIndex
+						return list
+					} else {
+						return nil
+					}
+				}
+				list.append(item)
+			}
+			delimiterIndex = scanner.currentIndex
+		} while scanner.scanString(",") != nil
+		return list
+	}
+}
+
+
 // "Mo-Fr 6:00-18:00, Sa,Su 6:00-12:00"
 struct DaysHours: ParseElement {
 
@@ -738,13 +797,13 @@ struct DaysHours: ParseElement {
 		}
 
 		// holidays are supposed to come first, but we support either order:
-		let holidays1 : [Holiday] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let holidays1 : [Holiday] = parseList(scanner: scanner, scan: Holiday.scan, delimiter: ",") ?? []
 		let comma1 = holidays1.count > 0 && scanner.scanString(",") != nil
-		let weekdays : [WeekdayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let weekdays : [WeekdayRange] = parseList(scanner: scanner, scan: WeekdayRange.scan, delimiter: ",") ?? []
 		let comma2 = weekdays.count > 0 && scanner.scanString(",") != nil
-		let holidays2 : [Holiday] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let holidays2 : [Holiday] = parseList(scanner: scanner, scan:Holiday.scan, delimiter: ",") ?? []
 
-		let hours : [HourRange] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let hours : [HourRange] = parseList(scanner: scanner, scan: HourRange.scan, delimiter: ",") ?? []
 		if weekdays.count == 0 && holidays1.count == 0 && holidays2.count == 0 && hours.count == 0 {
 			return nil
 		}
@@ -928,9 +987,9 @@ struct MonthsDaysHours: ParseElement {
 
 	static func scan(scanner:Scanner) -> MonthsDaysHours?
 	{
-		let months : [MonthDayRange] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let months : [MonthDayRange] = parseList(scanner: scanner, scan: MonthDayRange.scan, delimiter: ",") ?? []
 		let readabilitySeperator = scanner.scanString(":")
-		let daysHours : [DaysHours] = parseList(scanner: scanner, delimiter: ",") ?? []
+		let daysHours : [DaysHours] = parseList(scanner: scanner, scan: DaysHours.scan, delimiter: ",") ?? []
 		let modifier = Modifier.scan(scanner: scanner)
 		let comment = Comment.scan(scanner: scanner)
 		if months.count == 0 && daysHours.count == 0 && modifier == nil && comment == nil {
@@ -1006,7 +1065,7 @@ struct RuleList: ParseElement {
 	var rules : [MonthsDaysHours]
 
 	static func scan(scanner: Scanner) -> RuleList? {
-		if let list : [MonthsDaysHours] = parseList(scanner: scanner, delimiter: "" ) {
+		if let list : [MonthsDaysHours] = parseList(scanner: scanner, scan: MonthsDaysHours.scan, delimiter: "" ) {
 			return RuleList(rules: list)
 		}
 		return nil
