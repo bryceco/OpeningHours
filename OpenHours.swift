@@ -420,9 +420,9 @@ struct Day : ParseElement {
 	static func scan(scanner: Scanner) -> Day? {
 		let index = scanner.currentIndex
 		if let d = scanner.scanInt(),
-		   d >= 1 && d <= 31
+		   let day = Day(d)
 		{
-			return Day(d)
+			return day
 		}
 		scanner.currentIndex = index
 		return nil
