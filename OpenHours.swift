@@ -809,9 +809,19 @@ struct DaysHours: ParseElement {
 		let comma2 = weekdays.count > 0 && scanner.scanString(",") != nil
 		let holidays2 : [Holiday] = parseList(scanner: scanner, scan:Holiday.scan, delimiter: ",") ?? []
 		_ = scanner.scanString(":")	// misplaced readability separator
-		let hours : [HourRange] = parseList(scanner: scanner, scan: HourRange.scan, delimiter: ",") ?? []
+		let from = scanner.scanString("from")	// confused users
+		var hours : [HourRange] = parseList(scanner: scanner, scan: HourRange.scan, delimiter: ",") ?? []
 		if weekdays.count == 0 && holidays1.count == 0 && holidays2.count == 0 && hours.count == 0 {
 			return nil
+		}
+
+		if from != nil,
+		   hours.count == 1,
+		   let hour = hours.last,
+		   hour.end == hour.begin
+		{
+			// convert "from 6:00" to "6:00+"
+			hours = [HourRange(begin: hour.begin, end: hour.end, plus: true)]
 		}
 
 		if comma1 && comma2 {
