@@ -484,25 +484,21 @@ enum Month : Int, CaseIterable, ParseElement {
 }
 
 struct Year: ParseElement, Hashable, Equatable {
-	var year: Int
-
-	static func == (lhs: Year, rhs: Year) -> Bool {
-		return lhs.year == rhs.year
-	}
+	var rawValue: Int
 
 	static func scan(scanner: Scanner) -> Year? {
 		let index = scanner.currentIndex
 		if let year = scanner.scanInt(),
 		   year >= 1900
 		{
-			return Year(year: year)
+			return Year(rawValue: year)
 		}
 		scanner.currentIndex = index
 		return nil
 	}
 
 	func toString() -> String {
-		return "\(self.year)"
+		return "\(self.rawValue)"
 	}
 }
 
@@ -878,6 +874,55 @@ enum WeekdayRange: ParseElement {
 	}
 }
 
+// week "5-9"
+struct WeekRange: ParseElement {
+	var begin: Int
+	var end: Int
+	var slash: Int?
+
+	static func scan(scanner: Scanner) -> WeekRange? {
+		if let (begin,end):(Int,Int) = parseRange(scanner: scanner, scan:{ scanner in
+			let index = scanner.currentIndex
+			if let item = scanner.scanInt(),
+			   item >= 1 && item <= 53
+			{
+				return item
+			} else {
+				scanner.currentIndex = index
+				return nil
+			}})
+		{
+			let index = scanner.currentIndex
+			if scanner.scanString("/") != nil,
+			   let slash = scanner.scanInt(),
+			   slash > 0
+			{
+				return WeekRange(begin: begin, end: end, slash: slash)
+			}
+			scanner.currentIndex = index
+			return WeekRange(begin: begin, end: end, slash: nil)
+		}
+		return nil
+	}
+
+	static func scanList(scanner: Scanner) -> [WeekRange]? {
+		let index = scanner.currentIndex
+		if scanner.scanString("week") != nil,
+		   let list = parseList(scanner: scanner, scan: WeekRange.scan, delimiter: ",")
+		{
+			return list
+		}
+		scanner.currentIndex = index
+		return nil
+	}
+
+	func toString() -> String {
+		let base = begin == end ? "\(begin)" : "\(begin)-\(end)"
+		let s = slash == nil ? "" : "\\\(slash!)"
+		return base + s
+	}
+}
+
 // "Apr 5-10" or "Apr 3-May 22"
 struct MonthDayRange: ParseElement {
 	var begin: DayOfYear
@@ -935,6 +980,7 @@ struct MonthDayRange: ParseElement {
 	}
 }
 
+// "Dec 1-5,10-12,25,31, Jan 1-Mar 15, Apr 3-May 22"
 struct MonthDayRangeList {
 	// this is used just for parsing, though it could easily be converted to a standalone class
 	static func scan(scanner: Scanner) -> [MonthDayRange]? {
@@ -1195,6 +1241,7 @@ enum RuleSeparator: String, CaseIterable, ParseElement {
 struct MonthsDaysHours: ParseElement {
 
 	var months: [MonthDayRange]
+	var weeks: [WeekRange]
 	var readabilitySeparator: String?
 	var daysHours: [DaysHours]
 	var modifier : Modifier?
@@ -1204,6 +1251,7 @@ struct MonthsDaysHours: ParseElement {
 	static func scan(scanner:Scanner) -> MonthsDaysHours?
 	{
 		let months : [MonthDayRange] = MonthDayRangeList.scan(scanner: scanner) ?? []
+		let weeks : [WeekRange] = WeekRange.scanList(scanner: scanner) ?? []
 		let readabilitySeparator = scanner.scanString(":")
 		let daysHours : [DaysHours] = parseList(scanner: scanner, scan: DaysHours.scan, delimiter: ",") ?? []
 		let modifier = Modifier.scan(scanner: scanner)
@@ -1213,6 +1261,7 @@ struct MonthsDaysHours: ParseElement {
 		}
 		let ruleSeparator = RuleSeparator.scan(scanner: scanner)
 		return MonthsDaysHours(months: months,
+							   weeks: weeks,
 							   readabilitySeparator: readabilitySeparator,
 							   daysHours: daysHours,
 							   modifier: modifier,
@@ -1300,6 +1349,7 @@ struct RuleList: ParseElement {
 
 	mutating func appendMonthDayHours() -> Void {
 		rules.append(MonthsDaysHours(months: [],
+									 weeks: [],
 									 daysHours: [DaysHours(weekdays: [WeekdayRange.allDays],
 														   holidays: [],
 														   holidayFilter: [],
