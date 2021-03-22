@@ -397,6 +397,7 @@ enum PublicHoliday: String, CaseIterable, ParseElement {
 	}
 }
 
+// "We[-1]"
 struct NthWeekday: ParseElement {
 	var weekday: Weekday
 	var nth: NthEntry
@@ -513,23 +514,26 @@ enum HolidayName: String, CaseIterable {
 struct HolidayDate: ParseElement {
 	var year: Year?
 	var holiday: HolidayName
+	var offset: DayOffset?
 
 	static func scan(scanner: Scanner) -> HolidayDate? {
 		for date in HolidayName.allCases {
 			if scanner.scanWord(date.rawValue) != nil {
 				_ = scanner.scanWord("day")	// "thanksgiving day"
-				return HolidayDate(holiday: date)
+				let offset = DayOffset.scan(scanner: scanner)
+				return HolidayDate(holiday: date, offset: offset)
 			}
 		}
 		return nil
 	}
 
 	func toString() -> String {
-		return self.holiday.rawValue
+		let a = [year?.toString(), self.holiday.rawValue, offset?.toString() ]
+		return stringListToString(list: a, delimeter: " ")
 	}
 }
 
-// "Jan" or "Jan 5"
+// "Jan" or "Jan 5" or "Jan Su[-1]"
 struct MonthDate: ParseElement {
 	var year: Year?
 	var month: Month
@@ -739,6 +743,32 @@ struct HourRange: ParseElement {
 	}
 }
 
+struct DayOffset: ParseElement {
+	var offset: Int
+
+	static let prefixChars = CharacterSet.init(charactersIn: "+-")
+
+	static func scan(scanner: Scanner) -> DayOffset? {
+		let index = scanner.currentIndex
+		if let prefix = scanner.scanCharacters(from: prefixChars),
+			prefix.count == 1,
+			let off = scanner.scanInt(),
+			scanner.scanWordPrefix("days", minLength: 3) != nil,	// "day" or "days"
+			off > 0
+		{
+			let offset = prefix == "-" ? -off : off
+			return DayOffset(offset: offset)
+		}
+		scanner.currentIndex = index
+		return nil
+	}
+
+	func toString() -> String {
+		return "\(offset > 0 ? "+" : "-")\(offset) \(abs(offset)==1 ? "day" : "days")"
+	}
+}
+
+// "1-3"
 struct NthEntry: ParseElement {
 	var begin: Int
 	var end: Int
@@ -775,6 +805,7 @@ struct NthEntry: ParseElement {
 	}
 }
 
+// "[-1,1-3]"
 struct NthEntryList: ParseElement {
 	var list:[NthEntry]
 
