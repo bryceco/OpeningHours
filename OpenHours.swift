@@ -37,6 +37,15 @@ extension Scanner {
 		return nil
 	}
 
+	func scanAnyWord(_ list:[String]) -> String? {
+		for word in list {
+			if let text = scanWord(word) {
+				return text
+			}
+		}
+		return nil
+	}
+
 	func scanWordPrefix(_ text:String, minLength:Int) -> String? {
 		let index = self.currentIndex
 
@@ -193,6 +202,9 @@ enum Hour: CaseIterable, ParseElement {
 		}
 	}
 
+	static let AMs = ["AM","A.M."]
+	static let PMs = ["PM","P.M."]
+
 	static let minuteSeparators = CharacterSet(charactersIn: ":_.")
 	static func scan(scanner:Scanner) -> Hour?
 	{
@@ -211,22 +223,24 @@ enum Hour: CaseIterable, ParseElement {
 			   let minute = scanner.scanInt(),
 			   minute >= 0 && minute < 60
 			{
+				// "10:25"
 				scanner.charactersToBeSkipped = skipped
-				if scanner.scanWord("AM") != nil {
+				if scanner.scanAnyWord(AMs) != nil {
 					return .time((hour%12)*60+minute)
 				}
-				if scanner.scanWord("PM") != nil {
+				if scanner.scanAnyWord(PMs) != nil {
 					return .time((12+hour%12)*60+minute)
 				}
 				return .time(hour*60+minute)
 			}
 
+			// 10PM
 			scanner.charactersToBeSkipped = skipped
 			scanner.currentIndex = index2
-			if scanner.scanWord("AM") != nil {
+			if scanner.scanAnyWord(AMs) != nil {
 				return .time((hour%12)*60)
 			}
-			if scanner.scanWord("PM") != nil {
+			if scanner.scanAnyWord(PMs) != nil {
 				return .time((12+(hour%12))*60)
 			}
 		}
