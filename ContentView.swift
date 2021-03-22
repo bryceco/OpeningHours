@@ -140,11 +140,11 @@ struct HourPickerButton: View {
 
 
 struct MonthDayPickerModal: View {
-	@Binding var monthDay: MonthDay
+	@Binding var monthDay: DayOfYear
 	@Binding var isPresented: Bool
-	@State private var temp: MonthDay
+	@State private var temp: DayOfYear
 
-	init( monthDay: Binding<MonthDay>, isPresented: Binding<Bool>) {
+	init( monthDay: Binding<DayOfYear>, isPresented: Binding<Bool>) {
 		self._monthDay = monthDay
 		self._isPresented = isPresented
 		self._temp = State(initialValue: monthDay.wrappedValue)
@@ -157,7 +157,7 @@ struct MonthDayPickerModal: View {
 		VStack {
 
 			HStack {
-				Picker("", selection: $temp.month, content: { // <2>
+				Picker("", selection: $temp.monthBinding, content: { // <2>
 					ForEach(Month.allCases, id:\.self) { month in
 						Text(month.toString())
 					}
@@ -165,7 +165,7 @@ struct MonthDayPickerModal: View {
 				.frame(width: 80)
 				.clipped()
 
-				Picker("", selection: $temp.day, content: { // <2>
+				Picker("", selection: $temp.dayBinding, content: { // <2>
 					Text(" ")
 					ForEach(dayCases, id:\.self) { day in
 						Text(day == nil ? " " : day!.toString())
@@ -191,7 +191,7 @@ struct MonthDayPickerModal: View {
 	}
 }
 struct MonthDayPickerButton: View {
-	@Binding var binding : MonthDay
+	@Binding var binding : DayOfYear
 
 	@State private var showModalView: Bool = false
 
