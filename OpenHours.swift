@@ -422,13 +422,15 @@ struct NthWeekday: ParseElement {
 
 // "23"
 struct Day : ParseElement {
-	var day : Int
+	var rawValue : Int
+
+	static let allCases = Array(1...31).map({Day($0)!})
 
 	init?(_ d:Int) {
 		if d < 1 || d > 31 {
 			return nil
 		}
-		self.day = d
+		self.rawValue = d
 	}
 
 	static func scan(scanner: Scanner) -> Day? {
@@ -443,7 +445,7 @@ struct Day : ParseElement {
 	}
 
 	func toString() -> String {
-		return "\(self.day)"
+		return "\(self.rawValue)"
 	}
 }
 
@@ -589,7 +591,8 @@ enum DayOfYear: ParseElement {
 		}
 	}
 
-	var holidayBinding: Int {
+	static let allTypes = ["Date","Holiday"]
+	var typeBinding: Int {
 		get {
 			switch self {
 			case .monthDate:
@@ -599,23 +602,51 @@ enum DayOfYear: ParseElement {
 			}
 		}
 		set {
-			switch newValue {
-			case 0:
-				self = .monthDate(MonthDate(year: nil, month: .Jan, day: Day(1), nthWeekday: nil))
-			case 1:
-				self = .holidayDate(HolidayDate(year: nil, holiday: .easter))
-			default:
-				self = .monthDate(MonthDate(year: nil, month: .Jan, day: Day(1), nthWeekday: nil))
+			switch self {
+			case .monthDate:
+				switch newValue {
+				case 1:
+					self = .holidayDate(HolidayDate(year: nil, holiday: .easter))
+				default:
+					break
+				}
+			case .holidayDate:
+				switch newValue {
+				case 0:
+					self = .monthDate(MonthDate(year: nil, month: .Jan, day: Day(1), nthWeekday: nil))
+				default:
+					break
+				}
 			}
+
 		}
 	}
+
+	func monthList() -> [String] {
+		switch self {
+		case .monthDate:
+			return Month.allCases.map({$0.toString()})
+		case .holidayDate:
+			return HolidayName.allCases.map({$0.rawValue})
+		}
+	}
+	func dayList() -> [String] {
+		switch self {
+		case .monthDate:
+			return [" "] + Day.allCases.map({$0.toString()})
+		case .holidayDate:
+			return []
+		}
+	}
+
 	var monthBinding: Int {
 		get {
 			switch self {
 			case let .monthDate(mon):
 				return mon.month.rawValue
-			case .holidayDate:
-				return Month.Jan.rawValue
+			case let .holidayDate(hol):
+				let index = HolidayName.allCases.firstIndex(of: hol.holiday)!
+				return index
 			}
 		}
 		set {
@@ -624,7 +655,8 @@ enum DayOfYear: ParseElement {
 				let newMonth = Month.allCases[newValue]
 				self = .monthDate(MonthDate(year: mon.year, month: newMonth, day: mon.day, nthWeekday: mon.nthWeekday))
 			case .holidayDate:
-				self = .holidayDate(HolidayDate(year: nil, holiday: .easter))
+				let holidayName = HolidayName.allCases[newValue]
+				self = .holidayDate(HolidayDate(year: nil, holiday: holidayName))
 			}
 		}
 	}
@@ -632,7 +664,7 @@ enum DayOfYear: ParseElement {
 		get {
 			switch self {
 			case let .monthDate(mon):
-				return mon.day?.day ?? 0
+				return mon.day?.rawValue ?? 0
 			case .holidayDate:
 				return 0
 			}

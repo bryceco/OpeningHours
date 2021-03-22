@@ -46,7 +46,9 @@ class TagInfo : Codable {
 				print("")
 			}
 		}
-		print("bad percentage = \(100.0*Double(badCnt)/Double(self.values.count))")
+		let total = Double(self.values.count)
+		let bad = Double(badCnt)
+		print("Parses \(100*(total-bad)/total)% of \(total) strings, \(100*bad/total)% failing")
 	}
 
 	func save() {

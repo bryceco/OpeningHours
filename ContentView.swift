@@ -157,21 +157,36 @@ struct MonthDayPickerModal: View {
 		VStack {
 
 			HStack {
-				Picker("", selection: $temp.monthBinding, content: { // <2>
-					ForEach(Month.allCases.indices, id:\.self) { monthIndex in
-						Text(Month.allCases[monthIndex].toString())
+				let dayList = temp.dayList()
+
+				Picker("", selection: $temp.typeBinding, content: {
+					ForEach(DayOfYear.allTypes.indices, id:\.self) { typeIndex in
+						Text(DayOfYear.allTypes[typeIndex])
 					}
 				})
 				.frame(width: 80)
 				.clipped()
 
-				Picker("", selection: $temp.dayBinding, content: { // <2>
-					ForEach(0...31, id:\.self) { dayIndex in
-						Text(dayIndex == 0 ? " " : Day(dayIndex)!.toString())
+				Picker("", selection: $temp.monthBinding, content: {
+					let list = temp.monthList()
+					ForEach(list.indices, id:\.self) { monthIndex in
+						let text = list[monthIndex]
+						let text2 = text.prefix(1).capitalized + text.dropFirst()
+						Text(text2)
 					}
 				})
 				.frame(width: 80)
 				.clipped()
+
+				if dayList.count > 0 {
+					Picker("", selection: $temp.dayBinding, content: {
+						ForEach(dayList.indices, id:\.self) { dayIndex in
+							Text(dayList[dayIndex])
+						}
+					})
+					.frame(width: 80)
+					.clipped()
+				}
 			}
 
 			Button(action: {
