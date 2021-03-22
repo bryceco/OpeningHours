@@ -183,15 +183,15 @@ enum Modifier: String, CaseIterable, ParseElement {
 
 // "05:30"
 enum Hour: CaseIterable, ParseElement {
-	case sunrise
-	case sunset
-	case dawn
-	case dusk
+	case sunrise(Int)
+	case sunset(Int)
+	case dawn(Int)
+	case dusk(Int)
 	case time(Int)
 	case none			// used when trailing time of a range is missing
 
 	// time must be first here:
-	static var allCases: [Hour] = [.time(0),.sunrise,.sunset,.dawn,.dusk,.none]
+	static var allCases: [Hour] = [.time(0),.sunrise(0),.sunset(0),.dawn(0),.dusk(0),.none]
 
 	func isTime() -> Bool {
 		switch self {
@@ -248,38 +248,82 @@ enum Hour: CaseIterable, ParseElement {
 		scanner.charactersToBeSkipped = skipped
 
 		// named times
-		if scanner.scanWord("sunrise") != nil {
-			return .sunrise
+		let lParen = scanner.scanString("(")
+		if let name = scanner.scanCharacters(from: CharacterSet.letters),
+		   let event = Hour.withString(name, offset: 0)
+		{
+			if lParen == nil {
+				return event
+			}
+			// (sunrise-1:00)
+			if let sign = scanner.scanCharacters(from: CharacterSet.init(charactersIn: "+-")),
+			   let offset = Hour.scan(scanner: scanner),
+			   let minutes = offset.toMinute(),
+			   scanner.scanString(")") != nil
+			{
+				return event.withOffset(offset: sign == "-" ? -minutes : minutes)
+			}
 		}
-		if scanner.scanWord("sunset") != nil {
-			return .sunset
-		}
-		if scanner.scanWord("dawn") != nil {
-			return .dawn
-		}
-		if scanner.scanWord("dusk") != nil {
-			return .dusk
-		}
+		scanner.currentIndex = index
 		return nil
+	}
+
+	static func withString(_ text:String, offset:Int) -> Self? {
+		switch text.lowercased() {
+		case "sunrise":
+			return .sunrise(offset)
+		case "sunset":
+			return .sunset(offset)
+		case "dawn":
+			return .dawn(offset)
+		case "dusk":
+			return .dusk(offset)
+		default:
+			return nil
+		}
+	}
+
+	func withOffset(offset:Int) -> Self? {
+		switch self {
+			case .sunrise:		return .sunrise(offset)
+			case .sunset:		return .sunset(offset)
+			case .dawn:			return .dawn(offset)
+			case .dusk:			return .dusk(offset)
+			default:			return self
+		}
 	}
 
 	func toString() -> String
 	{
+		var name: String
+		var offset: Int
+
 		switch self {
-		case .sunrise:
-			return "sunrise"
-		case .sunset:
-			return "sunset"
-		case .dawn:
-			return "dawn"
-		case .dusk:
-			return "dusk"
+		case let .sunrise(off):
+			name = "sunrise"
+			offset = off
+		case let .sunset(off):
+			name = "sunset"
+			offset = off
+		case let .dawn(off):
+			name = "dawn"
+			offset = off
+		case let .dusk(off):
+			name = "dusk"
+			offset = off
 		case .none:
 			return "none"
 		case let .time(time):
 			let hour = time/60
 			let minute = time%60
 			return String(format: "%02d:%02d", arguments: [hour,minute])
+		}
+		if offset == 0 {
+			return name
+		} else {
+			let sign = offset >= 0 ? "+" : "-"
+			let hour = Hour.time(abs(offset))
+			return "(\(name)\(sign)\(hour.toString()))"
 		}
 	}
 
@@ -1088,7 +1132,6 @@ struct DaysHours: ParseElement {
 							 holidayFilter: holidays1,
 							 hours: hours)
 		}
-		// illegal, but we'll treat it as two holiday filters
 		return DaysHours(weekdays: weekdays,
 						 holidays: [],
 						 holidayFilter: holidays1+holidays2,
