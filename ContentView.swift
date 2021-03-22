@@ -158,17 +158,16 @@ struct MonthDayPickerModal: View {
 
 			HStack {
 				Picker("", selection: $temp.monthBinding, content: { // <2>
-					ForEach(Month.allCases, id:\.self) { month in
-						Text(month.toString())
+					ForEach(Month.allCases.indices, id:\.self) { monthIndex in
+						Text(Month.allCases[monthIndex].toString())
 					}
 				})
 				.frame(width: 80)
 				.clipped()
 
 				Picker("", selection: $temp.dayBinding, content: { // <2>
-					Text(" ")
-					ForEach(dayCases, id:\.self) { day in
-						Text(day == nil ? " " : day!.toString())
+					ForEach(0...31, id:\.self) { dayIndex in
+						Text(dayIndex == 0 ? " " : Day(dayIndex)!.toString())
 					}
 				})
 				.frame(width: 80)
