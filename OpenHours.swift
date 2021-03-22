@@ -380,12 +380,12 @@ enum Weekday: Int, CaseIterable, ParseElement {
 	}
 }
 
-enum Holiday: String, CaseIterable, ParseElement {
+enum PublicHoliday: String, CaseIterable, ParseElement {
 	case PH = "PH"
 	case SH = "SH"
 
-	static func scan(scanner: Scanner) -> Holiday? {
-		for value in Holiday.allCases {
+	static func scan(scanner: Scanner) -> PublicHoliday? {
+		for value in PublicHoliday.allCases {
 			if scanner.scanWord(value.rawValue) != nil {
 				return value
 			}
@@ -528,13 +528,13 @@ struct HolidayDate: ParseElement {
 }
 
 // "Jan" or "Jan 5"
-struct MonthDay2: ParseElement {
+struct MonthDate: ParseElement {
 	var year: Year?
 	var month: Month
 	var day: Day?					// day and nthWeekday are mutually exclusive
 	var nthWeekday: NthWeekday?
 
-	static func scan(scanner:Scanner) -> MonthDay2?
+	static func scan(scanner:Scanner) -> MonthDate?
 	{
 		let index = scanner.currentIndex
 		let year = Year.scan(scanner: scanner)
@@ -543,17 +543,17 @@ struct MonthDay2: ParseElement {
 			if let _ = HourRange.scan(scanner: scanner) {
 				// "Apr 5:30-6:30"
 				scanner.currentIndex = index2
-				return MonthDay2(year: year, month: mon, day: nil)
+				return MonthDate(year: year, month: mon, day: nil)
 			}
 			if let day = Day.scan(scanner: scanner) {
 				// "Apr 5"
-				return MonthDay2(year: year, month: mon, day: day)
+				return MonthDate(year: year, month: mon, day: day)
 			}
 			if let nthWeekday = NthWeekday.scan(scanner: scanner) {
 				// "Apr Fri[-1]"
-				return MonthDay2(year: year, month: mon, day: nil, nthWeekday: nthWeekday)
+				return MonthDate(year: year, month: mon, day: nil, nthWeekday: nthWeekday)
 			}
-			return MonthDay2(year: year, month: mon, day: nil)
+			return MonthDate(year: year, month: mon, day: nil)
 		}
 		scanner.currentIndex = index
 		return nil
@@ -567,12 +567,12 @@ struct MonthDay2: ParseElement {
 }
 
 enum DayOfYear: ParseElement {
-	case monthDay(MonthDay2)
+	case monthDate(MonthDate)
 	case holiday(HolidayDate)
 
 	static func scan(scanner: Scanner) -> DayOfYear? {
-		if let mon = MonthDay2.scan(scanner: scanner) {
-			return DayOfYear.monthDay(mon)
+		if let mon = MonthDate.scan(scanner: scanner) {
+			return DayOfYear.monthDate(mon)
 		}
 		if let holiday = HolidayDate.scan(scanner: scanner) {
 			return DayOfYear.holiday(holiday)
@@ -582,7 +582,7 @@ enum DayOfYear: ParseElement {
 
 	func toString() -> String {
 		switch self {
-		case let .monthDay(mon):
+		case let .monthDate(mon):
 			return mon.toString()
 		case let .holiday(hol):
 			return hol.toString()
@@ -592,7 +592,7 @@ enum DayOfYear: ParseElement {
 	var holidayBinding: Int {
 		get {
 			switch self {
-			case .monthDay:
+			case .monthDate:
 				return 0
 			case .holiday:
 				return 1
@@ -601,18 +601,18 @@ enum DayOfYear: ParseElement {
 		set {
 			switch newValue {
 			case 0:
-				self = .monthDay(MonthDay2(year: nil, month: .Jan, day: Day(1), nthWeekday: nil))
+				self = .monthDate(MonthDate(year: nil, month: .Jan, day: Day(1), nthWeekday: nil))
 			case 1:
 				self = .holiday(HolidayDate(year: nil, holiday: .easter))
 			default:
-				self = .monthDay(MonthDay2(year: nil, month: .Jan, day: Day(1), nthWeekday: nil))
+				self = .monthDate(MonthDate(year: nil, month: .Jan, day: Day(1), nthWeekday: nil))
 			}
 		}
 	}
 	var monthBinding: Int {
 		get {
 			switch self {
-			case let .monthDay(mon):
+			case let .monthDate(mon):
 				return mon.month.rawValue
 			case .holiday:
 				return Month.Jan.rawValue
@@ -620,9 +620,9 @@ enum DayOfYear: ParseElement {
 		}
 		set {
 			switch self {
-			case let .monthDay(mon):
+			case let .monthDate(mon):
 				let newMonth = Month.allCases[newValue]
-				self = .monthDay(MonthDay2(year: mon.year, month: newMonth, day: mon.day, nthWeekday: mon.nthWeekday))
+				self = .monthDate(MonthDate(year: mon.year, month: newMonth, day: mon.day, nthWeekday: mon.nthWeekday))
 			case .holiday:
 				self = .holiday(HolidayDate(year: nil, holiday: .easter))
 			}
@@ -631,20 +631,20 @@ enum DayOfYear: ParseElement {
 	var dayBinding: Int {
 		get {
 			switch self {
-			case let .monthDay(mon):
+			case let .monthDate(mon):
 				return mon.day?.day ?? 0
 			case .holiday:
 				return 0
 			}
 		}
 		set {
-			self = .monthDay(MonthDay2(year: nil, month: .Jan, day: Day(1), nthWeekday: nil))
+			self = .monthDate(MonthDate(year: nil, month: .Jan, day: Day(1), nthWeekday: nil))
 		}
 	}
 
-	func monthDay() -> MonthDay2? {
+	func monthDay() -> MonthDate? {
 		switch self {
-		case let .monthDay(mon):
+		case let .monthDate(mon):
 			return mon
 		default:
 			return nil
@@ -759,7 +759,7 @@ struct NthEntryList: ParseElement {
 
 // "Mo-Fr" or "Mo[-1]" or "PH"
 enum WeekdayRange: ParseElement {
-	case holiday(Holiday)
+	case holiday(PublicHoliday)
 	case weekday(Weekday,NthEntryList?)
 	case weekdays(Weekday,Weekday)
 
@@ -767,7 +767,7 @@ enum WeekdayRange: ParseElement {
 
 	static func scan(scanner:Scanner) -> WeekdayRange?
 	{
-		if let holiday = Holiday.scan(scanner: scanner) {
+		if let holiday = PublicHoliday.scan(scanner: scanner) {
 			return WeekdayRange.holiday(holiday)
 		}
 		if scanner.scanAnyWord(["Every Day","Everyday","Daily"]) != nil {
@@ -811,8 +811,8 @@ struct MonthDayRange: ParseElement {
 	var begin: DayOfYear
 	var end: DayOfYear
 
-	static let defaultValue = MonthDayRange(begin: DayOfYear.monthDay(MonthDay2(month: .Jan, day: nil)),
-											end: DayOfYear.monthDay(MonthDay2(month: .Dec, day: nil)))
+	static let defaultValue = MonthDayRange(begin: DayOfYear.monthDate(MonthDate(month: .Jan, day: nil)),
+											end: DayOfYear.monthDate(MonthDate(month: .Dec, day: nil)))
 
 	static func scan(scanner: Scanner) -> MonthDayRange?
 	{
@@ -824,7 +824,7 @@ struct MonthDayRange: ParseElement {
 				   let day = Day.scan(scanner: scanner)
 				{
 					// "Apr 5-10"
-					let last = DayOfYear.monthDay(MonthDay2(month: monthDay.month, day: day))
+					let last = DayOfYear.monthDate(MonthDate(month: monthDay.month, day: day))
 					return MonthDayRange(begin: first, end: last)
 				}
 				// "Apr 5-May 10"
@@ -836,20 +836,20 @@ struct MonthDayRange: ParseElement {
 			return MonthDayRange(begin: first, end: first)
 		}
 		if scanner.scanWord("summer") != nil {
-			return MonthDayRange(begin: DayOfYear.monthDay(MonthDay2(year: nil, month: Month.Jun, day: nil, nthWeekday: nil)),
-								 end: DayOfYear.monthDay(MonthDay2(year: nil, month: Month.Aug, day: nil, nthWeekday: nil)))
+			return MonthDayRange(begin: DayOfYear.monthDate(MonthDate(year: nil, month: Month.Jun, day: nil, nthWeekday: nil)),
+								 end: DayOfYear.monthDate(MonthDate(year: nil, month: Month.Aug, day: nil, nthWeekday: nil)))
 		}
 		if scanner.scanWord("winter") != nil {
-			return MonthDayRange(begin: DayOfYear.monthDay(MonthDay2(year: nil, month: Month.Dec, day: nil, nthWeekday: nil)),
-								 end: DayOfYear.monthDay(MonthDay2(year: nil, month: Month.Feb, day: nil, nthWeekday: nil)))
+			return MonthDayRange(begin: DayOfYear.monthDate(MonthDate(year: nil, month: Month.Dec, day: nil, nthWeekday: nil)),
+								 end: DayOfYear.monthDate(MonthDate(year: nil, month: Month.Feb, day: nil, nthWeekday: nil)))
 		}
 		if scanner.scanWord("spring") != nil {
-			return MonthDayRange(begin: DayOfYear.monthDay(MonthDay2(year: nil, month: Month.Mar, day: nil, nthWeekday: nil)),
-								 end: DayOfYear.monthDay(MonthDay2(year: nil, month: Month.May, day: nil, nthWeekday: nil)))
+			return MonthDayRange(begin: DayOfYear.monthDate(MonthDate(year: nil, month: Month.Mar, day: nil, nthWeekday: nil)),
+								 end: DayOfYear.monthDate(MonthDate(year: nil, month: Month.May, day: nil, nthWeekday: nil)))
 		}
 		if scanner.scanWord("autumn") != nil {
-			return MonthDayRange(begin: DayOfYear.monthDay(MonthDay2(year: nil, month: Month.Sep, day: nil, nthWeekday: nil)),
-								 end: DayOfYear.monthDay(MonthDay2(year: nil, month: Month.Nov, day: nil, nthWeekday: nil)))
+			return MonthDayRange(begin: DayOfYear.monthDate(MonthDate(year: nil, month: Month.Sep, day: nil, nthWeekday: nil)),
+								 end: DayOfYear.monthDate(MonthDate(year: nil, month: Month.Nov, day: nil, nthWeekday: nil)))
 		}
 		return nil
 	}
@@ -880,8 +880,8 @@ struct MonthDayRangeList {
 			{
 				// "Dec 1-5,10-12,25,31"
 				for (begin,end) in days {
-					list.append(MonthDayRange(begin: DayOfYear.monthDay(MonthDay2(year: nil, month: mon1.month, day: begin, nthWeekday: nil)),
-											  end: DayOfYear.monthDay(MonthDay2(year: nil, month: mon1.month, day: end, nthWeekday: nil))))
+					list.append(MonthDayRange(begin: DayOfYear.monthDate(MonthDate(year: nil, month: mon1.month, day: begin, nthWeekday: nil)),
+											  end: DayOfYear.monthDate(MonthDate(year: nil, month: mon1.month, day: end, nthWeekday: nil))))
 				}
 			} else {
 				guard let item = MonthDayRange.scan(scanner: scanner) else {
@@ -906,8 +906,8 @@ struct MonthDayRangeList {
 struct DaysHours: ParseElement {
 
 	var weekdays : [WeekdayRange]
-	var holidays : [Holiday]
-	var holidayFilter : [Holiday] // for space-seperated days: "PH Sa-Su" (i.e. holidays that fall on a weekend)
+	var holidays : [PublicHoliday]
+	var holidayFilter : [PublicHoliday] // for space-seperated days: "PH Sa-Su" (i.e. holidays that fall on a weekend)
 	var hours : [HourRange]
 
 	static let everyDay:Set<Int> = [0,1,2,3,4,5,6]
@@ -931,11 +931,11 @@ struct DaysHours: ParseElement {
 		}
 
 		// holidays are supposed to come first, but we support either order:
-		let holidays1 : [Holiday] = parseList(scanner: scanner, scan: Holiday.scan, delimiter: ",") ?? []
+		let holidays1 : [PublicHoliday] = parseList(scanner: scanner, scan: PublicHoliday.scan, delimiter: ",") ?? []
 		let comma1 = holidays1.count > 0 && scanner.scanString(",") != nil
 		let weekdays : [WeekdayRange] = parseList(scanner: scanner, scan: WeekdayRange.scan, delimiter: ",") ?? []
 		let comma2 = weekdays.count > 0 && scanner.scanString(",") != nil
-		let holidays2 : [Holiday] = parseList(scanner: scanner, scan:Holiday.scan, delimiter: ",") ?? []
+		let holidays2 : [PublicHoliday] = parseList(scanner: scanner, scan:PublicHoliday.scan, delimiter: ",") ?? []
 		_ = scanner.scanString(":")	// misplaced readability separator
 		let from = scanner.scanWord("from")	// confused users
 		var hours : [HourRange] = parseList(scanner: scanner, scan: HourRange.scan, delimiter: ",") ?? []
@@ -1032,8 +1032,8 @@ struct DaysHours: ParseElement {
 		return set
 	}
 
-	static func holidaysSet(days:[WeekdayRange]) -> Set<Holiday> {
-		var set = Set<Holiday>()
+	static func holidaysSet(days:[WeekdayRange]) -> Set<PublicHoliday> {
+		var set = Set<PublicHoliday>()
 		for day in days {
 			switch day {
 				case .weekday,
@@ -1050,7 +1050,7 @@ struct DaysHours: ParseElement {
 		return DaysHours.weekdaysSet(days:weekdays)
 	}
 
-	func holidaysSet() -> Set<Holiday> {
+	func holidaysSet() -> Set<PublicHoliday> {
 		return DaysHours.holidaysSet(days:weekdays)
 	}
 
