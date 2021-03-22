@@ -743,6 +743,7 @@ struct HourRange: ParseElement {
 	}
 }
 
+// "-39 days"
 struct DayOffset: ParseElement {
 	var offset: Int
 
@@ -821,14 +822,14 @@ struct NthEntryList: ParseElement {
 		return nil
 	}
 	func toString() -> String {
-		return OpeningHours.elementListToString(list: list, delimeter: ",")
+		return "[" + OpeningHours.elementListToString(list: list, delimeter: ",") + "]"
 	}
 }
 
 // "Mo-Fr" or "Mo[-1]" or "PH"
 enum WeekdayRange: ParseElement {
 	case holiday(PublicHoliday)
-	case weekday(Weekday,NthEntryList?)
+	case weekday(Weekday,NthEntryList?,DayOffset?)
 	case weekdays(Weekday,Weekday)
 
 	static let allDays = WeekdayRange.weekdays(.Mo, .Su)
@@ -854,7 +855,8 @@ enum WeekdayRange: ParseElement {
 			}
 			scanner.currentIndex = index
 			let nth = NthEntryList.scan(scanner: scanner)
-			return WeekdayRange.weekday(firstDay, nth)
+			let offset = DayOffset.scan(scanner: scanner)
+			return WeekdayRange.weekday(firstDay, nth, offset)
 		}
 		return nil
 	}
@@ -863,11 +865,13 @@ enum WeekdayRange: ParseElement {
 		switch self {
 		case let .holiday(holiday):
 			return holiday.toString()
-		case let .weekday(day, nth):
-			if let nth = nth {
-				return "\(day)[\(nth)]"
+		case let .weekday(day, nth, offset):
+			var s = day.toString()
+			s += nth?.toString() ?? ""
+			if let offset = offset {
+				s += " " + offset.toString()
 			}
-			return "\(day)"
+			return s
 		case let .weekdays(begin, end):
 			return "\(begin)-\(end)"
 		}
@@ -1087,7 +1091,7 @@ struct DaysHours: ParseElement {
 		var set = Set<Int>()
 		for dayRange in days {
 			switch dayRange {
-				case let .weekday(day, _):
+				case let .weekday(day, _, _):
 					set.insert(day.rawValue)
 				case let .weekdays(begin, end):
 					for day in begin.rawValue...end.rawValue {
