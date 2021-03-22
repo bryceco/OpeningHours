@@ -763,19 +763,20 @@ enum WeekdayRange: ParseElement {
 	case weekday(Weekday,NthEntryList?)
 	case weekdays(Weekday,Weekday)
 
-	static let everyWeekday = WeekdayRange.weekdays(.Mo, .Su)
+	static let allDays = WeekdayRange.weekdays(.Mo, .Su)
 
 	static func scan(scanner:Scanner) -> WeekdayRange?
 	{
 		if let holiday = Holiday.scan(scanner: scanner) {
 			return WeekdayRange.holiday(holiday)
 		}
-		if scanner.scanWord("Every Day") != nil ||
-			scanner.scanWord("Everyday") != nil ||
-			scanner.scanWord("Daily") != nil
-		{
-			return everyWeekday
+		if scanner.scanAnyWord(["Every Day","Everyday","Daily"]) != nil {
+			return allDays
 		}
+		if scanner.scanAnyWord(["weekdays"]) != nil {
+			return WeekdayRange.weekdays(.Mo, .Fr)
+		}
+
 		if let firstDay = Weekday.scan(scanner: scanner) {
 			let index = scanner.currentIndex
 			if scanner.scanDash() != nil,
@@ -987,7 +988,7 @@ struct DaysHours: ParseElement {
 		return OpeningHours.stringListToString(list: [filter,days2,hrs], delimeter: " ")
 	}
 
-	static let defaultValue = DaysHours(weekdays: [WeekdayRange.everyWeekday],
+	static let defaultValue = DaysHours(weekdays: [WeekdayRange.allDays],
 										holidays: [],
 										holidayFilter: [],
 										hours: [HourRange.defaultValue])
@@ -1227,7 +1228,7 @@ struct RuleList: ParseElement {
 
 	mutating func appendMonthDayHours() -> Void {
 		rules.append(MonthsDaysHours(months: [],
-									 daysHours: [DaysHours(weekdays: [WeekdayRange.everyWeekday],
+									 daysHours: [DaysHours(weekdays: [WeekdayRange.allDays],
 														   holidays: [],
 														   holidayFilter: [],
 														   hours: [HourRange.defaultValue])],
