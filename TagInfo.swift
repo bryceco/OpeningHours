@@ -16,7 +16,7 @@ class TagInfo : Codable {
 
 		#if false
 		repeat {
-			let s = "8:15 am - 9 pm"
+			let s = "Fr-Su 17-23"
 			let v = OpenHours.init(fromString: s)
 			v.printErrorMessage()
 		} while true

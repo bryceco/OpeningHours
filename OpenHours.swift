@@ -183,29 +183,36 @@ enum Modifier: String, CaseIterable, ParseElement {
 
 // "05:30"
 enum Hour: CaseIterable, ParseElement {
+	// items with a possible offset:
 	case sunrise(Int)
 	case sunset(Int)
 	case dawn(Int)
 	case dusk(Int)
+	// a regular time like 12:50, expressed in minutes:
 	case time(Int)
+	// undefined
 	case none			// used when trailing time of a range is missing
 
 	// time must be first here:
 	static var allCases: [Hour] = [.time(0),.sunrise(0),.sunset(0),.dawn(0),.dusk(0),.none]
 
-	func isTime() -> Bool {
+	func toMinute() -> Int?
+	{
 		switch self {
-		case .time:
-			return true
+		case let .time(time):
+			return time
 		default:
-			return false
+			return nil
 		}
+	}
+	func isTime() -> Bool {
+		return toMinute() != nil
 	}
 
 	static let AMs = ["AM","A.M."]
 	static let PMs = ["PM","P.M."]
-
 	static let minuteSeparators = CharacterSet(charactersIn: ":_.")
+
 	static func scan(scanner:Scanner) -> Hour?
 	{
 		let index = scanner.currentIndex
@@ -248,23 +255,29 @@ enum Hour: CaseIterable, ParseElement {
 		scanner.charactersToBeSkipped = skipped
 
 		// named times
-		let lParen = scanner.scanString("(")
-		if let name = scanner.scanCharacters(from: CharacterSet.letters),
-		   let event = Hour.withString(name, offset: 0)
+		if let event = scanEvent(scanner: scanner) {
+			return event
+		}
+		// (sunrise-1:00)
+		if scanner.scanString("(") != nil,
+		   let event = scanEvent(scanner: scanner),
+		   let sign = scanner.scanCharacters(from: CharacterSet.init(charactersIn: "+-")),
+		   sign.count == 1,
+		   let offset = Hour.scan(scanner: scanner),
+		   let minutes = offset.toMinute(),
+		   scanner.scanString(")") != nil
 		{
-			if lParen == nil {
-				return event
-			}
-			// (sunrise-1:00)
-			if let sign = scanner.scanCharacters(from: CharacterSet.init(charactersIn: "+-")),
-			   let offset = Hour.scan(scanner: scanner),
-			   let minutes = offset.toMinute(),
-			   scanner.scanString(")") != nil
-			{
-				return event.withOffset(offset: sign == "-" ? -minutes : minutes)
-			}
+			return event.withOffset(offset: sign == "-" ? -minutes : minutes)
 		}
 		scanner.currentIndex = index
+		return nil
+	}
+
+	static func scanEvent(scanner:Scanner) -> Self? {
+		if scanner.scanString("sunrise") != nil	{ return .sunrise(0) }
+		if scanner.scanString("sunset") != nil	{ return .sunset(0) }
+		if scanner.scanString("dawn") != nil	{ return .dawn(0) }
+		if scanner.scanString("dusk") != nil	{ return .dusk(0) }
 		return nil
 	}
 
@@ -372,16 +385,6 @@ enum Hour: CaseIterable, ParseElement {
 		}
 		set {
 			self = Hour.allCases[newValue]
-		}
-	}
-
-	func toMinute() -> Int?
-	{
-		switch self {
-		case let .time(time):
-			return time
-		default:
-			return nil
 		}
 	}
 }
@@ -586,7 +589,7 @@ struct MonthDate: ParseElement {
 		let year = Year.scan(scanner: scanner)
 		if let mon = Month.scan(scanner: scanner) {
 			let index2 = scanner.currentIndex
-			if let _ = HourRange.scan(scanner: scanner) {
+			if nextTokenCouldBeHour(scanner: scanner) {
 				// "Apr 5:30-6:30"
 				scanner.currentIndex = index2
 				return MonthDate(year: year, month: mon, day: nil)
@@ -609,6 +612,19 @@ struct MonthDate: ParseElement {
 		let d = day?.toString() ?? nthWeekday?.toString() ?? nil
 		let a = [year?.toString(), month.toString(), d]
 		return OpeningHours.stringListToString(list: a, delimeter: " ")
+	}
+
+	static func nextTokenCouldBeHour(scanner:Scanner) -> Bool {
+		let start = scanner.currentIndex
+		defer { scanner.currentIndex = start }
+		guard let range = HourRange.scan(scanner: scanner) else { return false }	// can't parse as hour
+		if range.begin.toMinute() == nil || range.end.toMinute() == nil { return true }	// it's sunrise, or 12-sunset, etc.
+		let sub = scanner.string[start..<scanner.currentIndex]
+		if sub.rangeOfCharacter(from: CharacterSet.decimalDigits.inverted) != nil {
+			return true	// contains a non-digit, so it isn't a plain integer
+		}
+		guard let num = Int(sub) else { return false }
+		return num >= 0 && num <= 24
 	}
 }
 
@@ -742,9 +758,16 @@ struct HourRange: ParseElement {
 
 	static let defaultValue = HourRange(begin: Hour.time(10*60), end: Hour.time(18*60), plus: false)
 	static let allDay = HourRange(begin: Hour.time(0), end: Hour.time(24*60), plus: false)
+	static let daytime = HourRange(begin: Hour.sunrise(0), end: Hour.sunset(0), plus: false)
 
 	static func scan(scanner:Scanner) -> HourRange?
 	{
+		if scanner.scanString("daytime") != nil ||
+			scanner.scanString("day time") != nil
+		{
+			return HourRange.daytime
+		}
+
 		if let firstHour = Hour.scan(scanner: scanner) {
 			let index = scanner.currentIndex
 			if scanner.scanDash() != nil,
@@ -1079,17 +1102,17 @@ struct DaysHours: ParseElement {
 						  "0-24",
 						  "24 hour",
 						  "24 hours",
+						  "24 hrs",
 						  "24hours",
 						  "24hr",
 						  "All day",
+						  "24 Horas"
 	]
 
 	static func scan(scanner: Scanner) -> DaysHours?
 	{
-		for text in all247 {
-			if scanner.scanWord(text) != nil {
-				return DaysHours.hours_24_7
-			}
+		if scanner.scanAnyWord(all247) != nil {
+			return DaysHours.hours_24_7
 		}
 
 		// holidays are supposed to come first, but we support either order:
