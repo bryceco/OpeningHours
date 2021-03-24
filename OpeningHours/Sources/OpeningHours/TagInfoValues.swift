@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class TagInfo {
+public class TagInfoValues {
 
 	public var values = [String]()
 
@@ -26,13 +26,14 @@ public class TagInfo {
 		for index in self.values.indices {
 			let value = self.values[index]
 
-			let hours = OpeningHours(fromString: value)
+			let hours = OpeningHours(string: value)
+
 			if hours.ruleList.rules.count == 0 {
 				print("\(index):")
 				hours.printErrorMessage()
 				badCnt += 1
 				for _ in 1...10 {
-					_ = OpeningHours(fromString: value)
+					hours.string = value
 				}
 				print("")
 				continue

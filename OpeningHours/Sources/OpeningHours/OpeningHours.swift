@@ -128,7 +128,8 @@ class Util {
 	{
 		return list.reduce("") { result, next in
 			if let next = next,
-			   next.count > 0 {
+			   next.count > 0
+			{
 				return result == "" ? next : result + delimeter + next
 			} else {
 				return result
@@ -1429,33 +1430,37 @@ struct RuleList: ParseElement {
 class OpeningHours: ObservableObject, CustomStringConvertible {
 
 	@Published var ruleList : RuleList
-	private var textual : String
+	private var stringRaw : String
 	private var errorIndex : String.Index?
 
 	var string: String {
 		get {
 			if ruleList.rules.count > 0 {
-				textual = toString()
+				stringRaw = toString()
 			}
-			return textual
+			return stringRaw
 		}
 		set {
-			let (result,errorLoc) = OpeningHours.parseString(newValue)
-			if let result = result {
-				ruleList = result
-				textual = toString()
+			let (rules,errorLoc) = OpeningHours.parseString(newValue)
+			if let rules = rules {
+				ruleList = rules
+				stringRaw = toString()
 			} else {
-				textual = newValue
+				// don't update rules if we failed to parse the string
+				stringRaw = newValue
 			}
 			self.errorIndex = errorLoc
 		}
 	}
 
-	public init(fromString text:String) {
-		textual = text
-		let (result,errorLoc) = OpeningHours.parseString(text)
-		self.ruleList = result ?? RuleList.emptyValue
-		self.errorIndex = errorLoc
+	public init() {
+		ruleList = RuleList.emptyValue
+		stringRaw = ""
+		errorIndex = nil
+	}
+	public convenience init(string:String) {
+		self.init()
+		self.string = string
 	}
 
 	static func parseString(_ text:String) -> (RuleList?,String.Index?) {
@@ -1486,16 +1491,16 @@ class OpeningHours: ObservableObject, CustomStringConvertible {
 
 	var errorPosition: Int {
 		var pos = 0
-		var index = textual.startIndex
+		var index = stringRaw.startIndex
 		while index != errorIndex {
-			index = textual.index(after: index)
+			index = stringRaw.index(after: index)
 			pos += 1
 		}
 		return pos
 	}
 
 	func printErrorMessage() {
-		print("\(textual)")
+		print("\(stringRaw)")
 		if errorIndex != nil {
 			var s = ""
 			for _ in 0..<errorPosition {

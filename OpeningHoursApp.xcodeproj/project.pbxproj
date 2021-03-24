@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0252A4E5260AC174008F63CA /* OpeningHours in Frameworks */ = {isa = PBXBuildFile; productRef = 0252A4E4260AC174008F63CA /* OpeningHours */; };
+		0252A4E5260AC174008F63CA /* OpeningHours in Frameworks */ = {isa = PBXBuildFile; productRef = 0252A4E4260AC174008F63CA /* OpeningHours */; settings = {ATTRIBUTES = (Required, ); }; };
 		02FF27F225F05BCE001B4910 /* OpeningHoursApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */; };
 		02FF27F625F05BCE001B4910 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 02FF27E125F05BCE001B4910 /* Assets.xcassets */; };
 /* End PBXBuildFile section */

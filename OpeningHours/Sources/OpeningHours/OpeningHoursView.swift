@@ -385,40 +385,38 @@ struct MonthsDaysHoursView: View {
 public struct OpeningHoursView: View {
 
 	@Binding var string: String
-	@State var dateRanges: OpeningHours
+	@State var openingHours: OpeningHours
 
 	public init( string: Binding<String> ) {
 		self._string = string
-		let hours = OpeningHours.init(fromString:string.wrappedValue)
-		self._dateRanges = State(initialValue: hours)
+		let hours = OpeningHours(string: string.wrappedValue)
+		self._openingHours = State(initialValue: hours)
 	}
 
 	let formatter = NoFormatter()
 
     public var body: some View {
 		ScrollView {
-			TextField("opening_hours", value: $dateRanges.string, formatter: formatter)
+			TextField("opening_hours", value: $openingHours.string, formatter: formatter)
 				.textFieldStyle(RoundedBorderTextFieldStyle())
-			ForEach(dateRanges.ruleList.rules.indices, id: \.self) { groupIndex in
-				SafeBinding($dateRanges.ruleList.rules, index: groupIndex) { group in
-					MonthsDaysHoursView(groupList: $dateRanges.ruleList.rules, group: group)
+			ForEach(openingHours.ruleList.rules.indices, id: \.self) { groupIndex in
+				SafeBinding($openingHours.ruleList.rules, index: groupIndex) { group in
+					MonthsDaysHoursView(groupList: $openingHours.ruleList.rules, group: group)
 					.padding()
 				}
 			}
 			.padding()
 			Button("More ranges", action: {
-				dateRanges.addMonthDayHours()
+				openingHours.addMonthDayHours()
 			})
 		}
     }
 }
 
-/*
-struct ContentView_Previews: PreviewProvider {
+struct OpeningHoursView_Previews: PreviewProvider {
 
 	static var previews: some View {
-		@State var string = "Mo-Fr 6:00-18:00"
-		OpeningHoursView(string: $string)
+		Text("hello")
+//		OpeningHoursView(string: .constant("Mo-Fr 6:00-18:00"))
     }
 }
-*/

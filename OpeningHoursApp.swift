@@ -11,7 +11,7 @@ import OpeningHours
 @main
 struct OpeningHoursApp: App {
 
-	let tagInfo = TagInfo()
+	// let tagInfo = TagInfoValues()
 
 	@State var opening_hours = """
 			Nov-Dec,Jan-Mar 05:30-23:30; \
