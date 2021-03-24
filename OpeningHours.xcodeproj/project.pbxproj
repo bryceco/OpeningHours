@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		022A1E2925F4A85300810DDE /* opening_hours.json in Resources */ = {isa = PBXBuildFile; fileRef = 022A1E2825F4A85300810DDE /* opening_hours.json */; };
+		022A1E2925F4A85300810DDE /* opening_hours.txt in Resources */ = {isa = PBXBuildFile; fileRef = 022A1E2825F4A85300810DDE /* opening_hours.txt */; };
 		02FF27F225F05BCE001B4910 /* OpeningHoursApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */; };
 		02FF27F425F05BCE001B4910 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF27E025F05BCD001B4910 /* ContentView.swift */; };
 		02FF27F625F05BCE001B4910 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 02FF27E125F05BCE001B4910 /* Assets.xcassets */; };
@@ -16,7 +16,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		022A1E2825F4A85300810DDE /* opening_hours.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = opening_hours.json; sourceTree = "<group>"; };
+		022A1E2825F4A85300810DDE /* opening_hours.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = opening_hours.txt; sourceTree = "<group>"; };
 		02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpeningHoursApp.swift; sourceTree = "<group>"; };
 		02FF27E025F05BCD001B4910 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		02FF27E125F05BCE001B4910 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -45,7 +45,7 @@
 				02FF27E025F05BCD001B4910 /* ContentView.swift */,
 				02FF27E925F05BCE001B4910 /* Info.plist */,
 				02FF280725F2CAC7001B4910 /* OpenHours.swift */,
-				022A1E2825F4A85300810DDE /* opening_hours.json */,
+				022A1E2825F4A85300810DDE /* opening_hours.txt */,
 				02FF280025F07469001B4910 /* OpeningHours.entitlements */,
 				02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */,
 				02FF27E725F05BCE001B4910 /* Products */,
@@ -118,7 +118,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				022A1E2925F4A85300810DDE /* opening_hours.json in Resources */,
+				022A1E2925F4A85300810DDE /* opening_hours.txt in Resources */,
 				02FF27F625F05BCE001B4910 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

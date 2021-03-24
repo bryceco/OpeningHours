@@ -63,11 +63,10 @@ class TagInfo : Codable {
 	}
 
 	func restore() {
-		let decoder = JSONDecoder()
 		do {
-			if let url = Bundle.main.url(forResource: "opening_hours", withExtension:"json") {
-				let jsonData = try Data(contentsOf: url)
-				self.values = try decoder.decode([String].self, from: jsonData)
+			if let url = Bundle.main.url(forResource: "opening_hours", withExtension:"txt") {
+				let text = try String(contentsOf: url, encoding: .utf8)
+				self.values = text.components(separatedBy: .newlines)
 			} else {
 				print("error")
 			}
