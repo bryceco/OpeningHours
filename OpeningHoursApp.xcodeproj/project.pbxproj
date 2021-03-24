@@ -44,12 +44,12 @@
 			isa = PBXGroup;
 			children = (
 				02FF27E125F05BCE001B4910 /* Assets.xcassets */,
+				0252A4E3260AC174008F63CA /* Frameworks */,
 				02FF27E925F05BCE001B4910 /* Info.plist */,
+				0252A4E2260AC0F6008F63CA /* OpeningHours */,
 				02FF280025F07469001B4910 /* OpeningHours.entitlements */,
 				02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */,
-				0252A4E2260AC0F6008F63CA /* OpeningHours */,
 				02FF27E725F05BCE001B4910 /* Products */,
-				0252A4E3260AC174008F63CA /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
