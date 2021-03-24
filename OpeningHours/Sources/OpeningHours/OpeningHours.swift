@@ -1435,21 +1435,18 @@ class OpeningHours: ObservableObject, CustomStringConvertible {
 
 	var string: String {
 		get {
-			if ruleList.rules.count > 0 {
-				stringRaw = toString()
+			if errorIndex == nil {
+				return toString()
 			}
 			return stringRaw
 		}
 		set {
 			let (rules,errorLoc) = OpeningHours.parseString(newValue)
+			self.stringRaw = newValue
+			self.errorIndex = errorLoc
 			if let rules = rules {
 				ruleList = rules
-				stringRaw = toString()
-			} else {
-				// don't update rules if we failed to parse the string
-				stringRaw = newValue
 			}
-			self.errorIndex = errorLoc
 		}
 	}
 

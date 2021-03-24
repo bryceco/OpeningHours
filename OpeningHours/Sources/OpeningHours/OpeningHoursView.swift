@@ -384,13 +384,12 @@ struct MonthsDaysHoursView: View {
 
 public struct OpeningHoursView: View {
 
-	@Binding var string: String
-	@State var openingHours: OpeningHours
+	@Binding 		var string: String
+	@ObservedObject var openingHours: OpeningHours
 
 	public init( string: Binding<String> ) {
 		self._string = string
-		let hours = OpeningHours(string: string.wrappedValue)
-		self._openingHours = State(initialValue: hours)
+		self.openingHours = OpeningHours(string: string.wrappedValue)
 	}
 
 	let formatter = NoFormatter()
