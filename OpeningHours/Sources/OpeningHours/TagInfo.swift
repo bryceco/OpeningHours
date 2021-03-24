@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class TagInfo : Codable {
+public class TagInfo {
 
 	public var values = [String]()
 
