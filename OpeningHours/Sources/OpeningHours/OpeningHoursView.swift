@@ -395,9 +395,6 @@ public struct OpeningHoursView: View {
 
 	let formatter = NoFormatter()
 
-	@State private var currentDate = Date()
-	@State private var showsDatePicker = false
-
     public var body: some View {
 		ScrollView {
 			TextField("opening_hours", value: $dateRanges.string, formatter: formatter)
