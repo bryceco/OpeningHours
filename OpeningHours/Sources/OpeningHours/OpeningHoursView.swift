@@ -382,19 +382,23 @@ struct MonthsDaysHoursView: View {
 }
 
 
-struct ContentView: View {
+public struct OpeningHoursView: View {
 
-	@ObservedObject var dateRanges = OpenHours.init(fromString:"""
-			Nov-Dec,Jan-Mar 05:30-23:30; \
-			Apr-Oct Mo-Sa 05:00-24:00; \
-			Apr-Oct Su 01:00-2:00,05:00-24:00
-			""")
+	@Binding var string: String
+	@State var dateRanges: OpeningHours
+
+	public init( string: Binding<String> ) {
+		self._string = string
+		let hours = OpeningHours.init(fromString:string.wrappedValue)
+		self._dateRanges = State(initialValue: hours)
+	}
+
 	let formatter = NoFormatter()
 
 	@State private var currentDate = Date()
 	@State private var showsDatePicker = false
 
-    var body: some View {
+    public var body: some View {
 		ScrollView {
 			TextField("opening_hours", value: $dateRanges.string, formatter: formatter)
 				.textFieldStyle(RoundedBorderTextFieldStyle())
@@ -412,8 +416,12 @@ struct ContentView: View {
     }
 }
 
+/*
 struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
+
+	static var previews: some View {
+		@State var string = "Mo-Fr 6:00-18:00"
+		OpeningHoursView(string: $string)
     }
 }
+*/

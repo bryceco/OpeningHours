@@ -7,17 +7,17 @@
 
 import Foundation
 
-class TagInfo : Codable {
+public class TagInfo : Codable {
 
 	public var values = [String]()
 
-	init() {
+	public init() {
 		self.restore()
 
 		#if false
 		repeat {
 			let s = "Fr-Su 17-23"
-			let v = OpenHours.init(fromString: s)
+			let v = OpeningHours.init(fromString: s)
 			v.printErrorMessage()
 		} while true
 		#endif
@@ -26,13 +26,13 @@ class TagInfo : Codable {
 		for index in self.values.indices {
 			let value = self.values[index]
 
-			let hours = OpenHours(fromString: value)
+			let hours = OpeningHours(fromString: value)
 			if hours.ruleList.rules.count == 0 {
 				print("\(index):")
 				hours.printErrorMessage()
 				badCnt += 1
 				for _ in 1...10 {
-					_ = OpenHours(fromString: value)
+					_ = OpeningHours(fromString: value)
 				}
 				print("")
 				continue
@@ -64,7 +64,7 @@ class TagInfo : Codable {
 
 	func restore() {
 		do {
-			if let url = Bundle.main.url(forResource: "opening_hours", withExtension:"txt") {
+			if let url = Bundle.module.url(forResource: "opening_hours", withExtension:"txt") {
 				let text = try String(contentsOf: url, encoding: .utf8)
 				self.values = text.components(separatedBy: .newlines)
 			} else {

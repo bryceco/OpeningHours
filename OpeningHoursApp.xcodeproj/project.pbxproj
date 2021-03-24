@@ -3,28 +3,22 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		022A1E2925F4A85300810DDE /* opening_hours.txt in Resources */ = {isa = PBXBuildFile; fileRef = 022A1E2825F4A85300810DDE /* opening_hours.txt */; };
+		0252A4E5260AC174008F63CA /* OpeningHours in Frameworks */ = {isa = PBXBuildFile; productRef = 0252A4E4260AC174008F63CA /* OpeningHours */; };
 		02FF27F225F05BCE001B4910 /* OpeningHoursApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */; };
-		02FF27F425F05BCE001B4910 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF27E025F05BCD001B4910 /* ContentView.swift */; };
 		02FF27F625F05BCE001B4910 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 02FF27E125F05BCE001B4910 /* Assets.xcassets */; };
-		02FF280225F2B94A001B4910 /* TagInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF280125F2B94A001B4910 /* TagInfo.swift */; };
-		02FF280825F2CAC7001B4910 /* OpenHours.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FF280725F2CAC7001B4910 /* OpenHours.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		022A1E2825F4A85300810DDE /* opening_hours.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = opening_hours.txt; sourceTree = "<group>"; };
+		0252A4E2260AC0F6008F63CA /* OpeningHours */ = {isa = PBXFileReference; lastKnownFileType = folder; path = OpeningHours; sourceTree = "<group>"; };
 		02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpeningHoursApp.swift; sourceTree = "<group>"; };
-		02FF27E025F05BCD001B4910 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		02FF27E125F05BCE001B4910 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		02FF27E625F05BCE001B4910 /* OpeningHours.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpeningHours.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		02FF27E625F05BCE001B4910 /* OpeningHoursApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpeningHoursApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		02FF27E925F05BCE001B4910 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		02FF280025F07469001B4910 /* OpeningHours.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpeningHours.entitlements; sourceTree = "<group>"; };
-		02FF280125F2B94A001B4910 /* TagInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagInfo.swift; sourceTree = "<group>"; };
-		02FF280725F2CAC7001B4910 /* OpenHours.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenHours.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,31 +26,37 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0252A4E5260AC174008F63CA /* OpeningHours in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0252A4E3260AC174008F63CA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		02FF27D925F05BCD001B4910 = {
 			isa = PBXGroup;
 			children = (
 				02FF27E125F05BCE001B4910 /* Assets.xcassets */,
-				02FF27E025F05BCD001B4910 /* ContentView.swift */,
 				02FF27E925F05BCE001B4910 /* Info.plist */,
-				02FF280725F2CAC7001B4910 /* OpenHours.swift */,
-				022A1E2825F4A85300810DDE /* opening_hours.txt */,
 				02FF280025F07469001B4910 /* OpeningHours.entitlements */,
 				02FF27DF25F05BCD001B4910 /* OpeningHoursApp.swift */,
+				0252A4E2260AC0F6008F63CA /* OpeningHours */,
 				02FF27E725F05BCE001B4910 /* Products */,
-				02FF280125F2B94A001B4910 /* TagInfo.swift */,
+				0252A4E3260AC174008F63CA /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
 		02FF27E725F05BCE001B4910 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				02FF27E625F05BCE001B4910 /* OpeningHours.app */,
+				02FF27E625F05BCE001B4910 /* OpeningHoursApp.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -64,9 +64,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		02FF27E525F05BCE001B4910 /* OpeningHours */ = {
+		02FF27E525F05BCE001B4910 /* OpeningHoursApp */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 02FF27FA25F05BCE001B4910 /* Build configuration list for PBXNativeTarget "OpeningHours" */;
+			buildConfigurationList = 02FF27FA25F05BCE001B4910 /* Build configuration list for PBXNativeTarget "OpeningHoursApp" */;
 			buildPhases = (
 				02FF27E225F05BCE001B4910 /* Sources */,
 				02FF27E325F05BCE001B4910 /* Frameworks */,
@@ -76,9 +76,12 @@
 			);
 			dependencies = (
 			);
-			name = OpeningHours;
+			name = OpeningHoursApp;
+			packageProductDependencies = (
+				0252A4E4260AC174008F63CA /* OpeningHours */,
+			);
 			productName = "OpeningHours (iOS)";
-			productReference = 02FF27E625F05BCE001B4910 /* OpeningHours.app */;
+			productReference = 02FF27E625F05BCE001B4910 /* OpeningHoursApp.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -95,7 +98,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 02FF27DD25F05BCD001B4910 /* Build configuration list for PBXProject "OpeningHours" */;
+			buildConfigurationList = 02FF27DD25F05BCD001B4910 /* Build configuration list for PBXProject "OpeningHoursApp" */;
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -108,7 +111,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				02FF27E525F05BCE001B4910 /* OpeningHours */,
+				02FF27E525F05BCE001B4910 /* OpeningHoursApp */,
 			);
 		};
 /* End PBXProject section */
@@ -118,7 +121,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				022A1E2925F4A85300810DDE /* opening_hours.txt in Resources */,
 				02FF27F625F05BCE001B4910 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -130,9 +132,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				02FF27F425F05BCE001B4910 /* ContentView.swift in Sources */,
-				02FF280825F2CAC7001B4910 /* OpenHours.swift in Sources */,
-				02FF280225F2B94A001B4910 /* TagInfo.swift in Sources */,
 				02FF27F225F05BCE001B4910 /* OpeningHoursApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -267,7 +266,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.Bryceco.OpeningHours;
-				PRODUCT_NAME = OpeningHours;
+				PRODUCT_NAME = OpeningHoursApp;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -292,7 +291,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.Bryceco.OpeningHours;
-				PRODUCT_NAME = OpeningHours;
+				PRODUCT_NAME = OpeningHoursApp;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -305,7 +304,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		02FF27DD25F05BCD001B4910 /* Build configuration list for PBXProject "OpeningHours" */ = {
+		02FF27DD25F05BCD001B4910 /* Build configuration list for PBXProject "OpeningHoursApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				02FF27F825F05BCE001B4910 /* Debug */,
@@ -314,7 +313,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		02FF27FA25F05BCE001B4910 /* Build configuration list for PBXNativeTarget "OpeningHours" */ = {
+		02FF27FA25F05BCE001B4910 /* Build configuration list for PBXNativeTarget "OpeningHoursApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				02FF27FB25F05BCE001B4910 /* Debug */,
@@ -324,6 +323,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0252A4E4260AC174008F63CA /* OpeningHours */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OpeningHours;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 02FF27DA25F05BCD001B4910 /* Project object */;
 }

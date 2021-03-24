@@ -6,15 +6,22 @@
 //
 
 import SwiftUI
+import OpeningHours
 
 @main
 struct OpeningHoursApp: App {
 
 	let tagInfo = TagInfo()
 
+	@State var opening_hours = """
+			Nov-Dec,Jan-Mar 05:30-23:30; \
+			Apr-Oct Mo-Sa 05:00-24:00; \
+			Apr-Oct Su 01:00-2:00,05:00-24:00
+			"""
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
-        }
+			OpeningHoursView(string: $opening_hours)
+		}
     }
 }

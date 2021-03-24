@@ -81,63 +81,65 @@ extension Scanner {
 }
 
 // parses "T-T"
-func parseRange<T>(scanner:Scanner, scan:(Scanner)->T? ) -> (T,T)? {
-	if let first = scan(scanner) {
-		let index = scanner.currentIndex
-		if scanner.scanDash() != nil {
-			if let second = scan(scanner) {
-				return (first,second)
+class Util {
+	static func parseRange<T>(scanner:Scanner, scan:(Scanner)->T? ) -> (T,T)? {
+		if let first = scan(scanner) {
+			let index = scanner.currentIndex
+			if scanner.scanDash() != nil {
+				if let second = scan(scanner) {
+					return (first,second)
+				}
+				scanner.currentIndex = index
 			}
-			scanner.currentIndex = index
+			return (first,first)
 		}
-		return (first,first)
+		return nil
 	}
-	return nil
-}
 
-// parses "T,T,T"
-func parseList<T>(scanner:Scanner, scan:(Scanner)->T?, delimiter:String) -> [T]?
-{
-	var list = [T]()
-	var delimiterIndex: String.Index? = nil
-	repeat {
-		guard let item = scan(scanner) else {
-			// back up to before preceding comma
-			if let delimiterIndex = delimiterIndex {
-				scanner.currentIndex = delimiterIndex
-				return list
+	// parses "T,T,T"
+	static func parseList<T>(scanner:Scanner, scan:(Scanner)->T?, delimiter:String) -> [T]?
+	{
+		var list = [T]()
+		var delimiterIndex: String.Index? = nil
+		repeat {
+			guard let item = scan(scanner) else {
+				// back up to before preceding comma
+				if let delimiterIndex = delimiterIndex {
+					scanner.currentIndex = delimiterIndex
+					return list
+				} else {
+					return nil
+				}
+			}
+			list.append(item)
+			delimiterIndex = scanner.currentIndex
+		} while scanner.scanString(delimiter) != nil
+		return list
+	}
+
+	// parses "T-T,T,T-T"
+	static func parseListRange<T>(scanner: Scanner, scan:(Scanner)->T?, delimiter:String) -> [(T,T)]? {
+		return parseList(scanner: scanner,
+						 scan: { scanner in	return parseRange(scanner: scanner, scan: scan) },
+						 delimiter: delimiter)
+	}
+
+	static func stringListToString(list: [String?], delimeter:String) -> String
+	{
+		return list.reduce("") { result, next in
+			if let next = next,
+			   next.count > 0 {
+				return result == "" ? next : result + delimeter + next
 			} else {
-				return nil
+				return result
 			}
 		}
-		list.append(item)
-		delimiterIndex = scanner.currentIndex
-	} while scanner.scanString(delimiter) != nil
-	return list
-}
-
-// parses "T-T,T,T-T"
-func parseListRange<T>(scanner: Scanner, scan:(Scanner)->T?, delimiter:String) -> [(T,T)]? {
-	return parseList(scanner: scanner,
-					 scan: { scanner in	return parseRange(scanner: scanner, scan: scan) },
-					 delimiter: delimiter)
-}
-
-func stringListToString(list: [String?], delimeter:String) -> String
-{
-	return list.reduce("") { result, next in
-		if let next = next,
-		   next.count > 0 {
-			return result == "" ? next : result + delimeter + next
-		} else {
-			return result
-		}
 	}
-}
-func elementListToString<T:ParseElement>(list: [T], delimeter:String) -> String
-{
-	return list.reduce("") { result, next in
-		return result == "" ? next.toString() : result + delimeter + next.toString()
+	static func elementListToString<T:ParseElement>(list: [T], delimeter:String) -> String
+	{
+		return list.reduce("") { result, next in
+			return result == "" ? next.toString() : result + delimeter + next.toString()
+		}
 	}
 }
 
@@ -572,7 +574,7 @@ struct HolidayDate: ParseElement {
 
 	func toString() -> String {
 		let a = [year?.toString(), self.holiday.rawValue, offset?.toString() ]
-		return stringListToString(list: a, delimeter: " ")
+		return Util.stringListToString(list: a, delimeter: " ")
 	}
 }
 
@@ -611,7 +613,7 @@ struct MonthDate: ParseElement {
 	func toString() -> String {
 		let d = day?.toString() ?? nthWeekday?.toString() ?? nil
 		let a = [year?.toString(), month.toString(), d]
-		return OpeningHours.stringListToString(list: a, delimeter: " ")
+		return Util.stringListToString(list: a, delimeter: " ")
 	}
 
 	static func nextTokenCouldBeHour(scanner:Scanner) -> Bool {
@@ -876,7 +878,7 @@ struct NthEntryList: ParseElement {
 	static func scan(scanner: Scanner) -> NthEntryList? {
 		let index = scanner.currentIndex
 		if scanner.scanString("[") != nil,
-		   let list:[NthEntry] = parseList(scanner: scanner, scan:NthEntry.scan, delimiter: ","),
+		   let list:[NthEntry] = Util.parseList(scanner: scanner, scan:NthEntry.scan, delimiter: ","),
 		   scanner.scanString("]") != nil
 		{
 			return NthEntryList(list:list)
@@ -885,7 +887,7 @@ struct NthEntryList: ParseElement {
 		return nil
 	}
 	func toString() -> String {
-		return "[" + OpeningHours.elementListToString(list: list, delimeter: ",") + "]"
+		return "[" + Util.elementListToString(list: list, delimeter: ",") + "]"
 	}
 }
 
@@ -948,7 +950,7 @@ struct WeekRange: ParseElement {
 	var slash: Int?
 
 	static func scan(scanner: Scanner) -> WeekRange? {
-		if let (begin,end):(Int,Int) = parseRange(scanner: scanner, scan:{ scanner in
+		if let (begin,end):(Int,Int) = Util.parseRange(scanner: scanner, scan:{ scanner in
 			let index = scanner.currentIndex
 			if let item = scanner.scanInt(),
 			   item >= 1 && item <= 53
@@ -975,7 +977,7 @@ struct WeekRange: ParseElement {
 	static func scanList(scanner: Scanner) -> [WeekRange]? {
 		let index = scanner.currentIndex
 		if scanner.scanString("week") != nil,
-		   let list = parseList(scanner: scanner, scan: WeekRange.scan, delimiter: ",")
+		   let list = Util.parseList(scanner: scanner, scan: WeekRange.scan, delimiter: ",")
 		{
 			return list
 		}
@@ -1061,7 +1063,7 @@ struct MonthDayRangeList {
 			   mon1.month == mon2.month,
 			   mon1.day != nil && mon2.day != nil,
 			   mon1.year == nil && mon2.year == nil,
-			   let days = parseListRange(scanner: scanner, scan: Day.scan, delimiter: ",")
+			   let days = Util.parseListRange(scanner: scanner, scan: Day.scan, delimiter: ",")
 			{
 				// "Dec 1-5,10-12,25,31"
 				for (begin,end) in days {
@@ -1116,14 +1118,14 @@ struct DaysHours: ParseElement {
 		}
 
 		// holidays are supposed to come first, but we support either order:
-		let holidays1 : [PublicHoliday] = parseList(scanner: scanner, scan: PublicHoliday.scan, delimiter: ",") ?? []
+		let holidays1 : [PublicHoliday] = Util.parseList(scanner: scanner, scan: PublicHoliday.scan, delimiter: ",") ?? []
 		let comma1 = holidays1.count > 0 && scanner.scanString(",") != nil
-		let weekdays : [WeekdayRange] = parseList(scanner: scanner, scan: WeekdayRange.scan, delimiter: ",") ?? []
+		let weekdays : [WeekdayRange] = Util.parseList(scanner: scanner, scan: WeekdayRange.scan, delimiter: ",") ?? []
 		let comma2 = weekdays.count > 0 && scanner.scanString(",") != nil
-		let holidays2 : [PublicHoliday] = parseList(scanner: scanner, scan:PublicHoliday.scan, delimiter: ",") ?? []
+		let holidays2 : [PublicHoliday] = Util.parseList(scanner: scanner, scan:PublicHoliday.scan, delimiter: ",") ?? []
 		_ = scanner.scanString(":")	// misplaced readability separator
 		let from = scanner.scanWord("from")	// confused users
-		var hours : [HourRange] = parseList(scanner: scanner, scan: HourRange.scan, delimiter: ",") ?? []
+		var hours : [HourRange] = Util.parseList(scanner: scanner, scan: HourRange.scan, delimiter: ",") ?? []
 		if weekdays.count == 0 && holidays1.count == 0 && holidays2.count == 0 && hours.count == 0 {
 			return nil
 		}
@@ -1163,13 +1165,13 @@ struct DaysHours: ParseElement {
 
 
 	func toString() -> String {
-		let days = OpeningHours.elementListToString(list: weekdays, delimeter: ",")
-		let holi = OpeningHours.elementListToString(list: holidays, delimeter: ",")
-		let filter = OpeningHours.elementListToString(list: holidayFilter, delimeter: ",")
-		let hrs = OpeningHours.elementListToString(list: hours, delimeter: ",")
+		let days = Util.elementListToString(list: weekdays, delimeter: ",")
+		let holi = Util.elementListToString(list: holidays, delimeter: ",")
+		let filter = Util.elementListToString(list: holidayFilter, delimeter: ",")
+		let hrs = Util.elementListToString(list: hours, delimeter: ",")
 
-		let days2 = OpeningHours.stringListToString(list: [holi,days], delimeter: ",")
-		return OpeningHours.stringListToString(list: [filter,days2,hrs], delimeter: " ")
+		let days2 = Util.stringListToString(list: [holi,days], delimeter: ",")
+		return Util.stringListToString(list: [filter,days2,hrs], delimeter: " ")
 	}
 
 	static let defaultValue = DaysHours(weekdays: [WeekdayRange.allDays],
@@ -1319,7 +1321,7 @@ struct MonthsDaysHours: ParseElement {
 		let months : [MonthDayRange] = MonthDayRangeList.scan(scanner: scanner) ?? []
 		let weeks : [WeekRange] = WeekRange.scanList(scanner: scanner) ?? []
 		let readabilitySeparator = scanner.scanString(":")
-		let daysHours : [DaysHours] = parseList(scanner: scanner, scan: DaysHours.scan, delimiter: ",") ?? []
+		let daysHours : [DaysHours] = Util.parseList(scanner: scanner, scan: DaysHours.scan, delimiter: ",") ?? []
 		let modifier = Modifier.scan(scanner: scanner)
 		let comment = Comment.scan(scanner: scanner)
 		if months.count == 0 && daysHours.count == 0 && modifier == nil && comment == nil {
@@ -1342,14 +1344,14 @@ struct MonthsDaysHours: ParseElement {
 		if is24_7() {
 			return "24/7"
 		}
-		let m = OpeningHours.elementListToString(list: months, delimeter: ",")
-		let dh = OpeningHours.elementListToString(list: daysHours, delimeter: ", ")
+		let m = Util.elementListToString(list: months, delimeter: ",")
+		let dh = Util.elementListToString(list: daysHours, delimeter: ", ")
 		let a = [m,
 				 readabilitySeparator,
 				 dh,
 				 modifier?.toString(),
 				 comment?.toString()]
-		var r = OpeningHours.stringListToString(list: a, delimeter: " ")
+		var r = Util.stringListToString(list: a, delimeter: " ")
 		if withRuleSeparator {
 			r += ruleSeparator?.toString() ?? ""
 		}
@@ -1396,7 +1398,7 @@ struct RuleList: ParseElement {
 	var rules : [MonthsDaysHours]
 
 	static func scan(scanner: Scanner) -> RuleList? {
-		if let list : [MonthsDaysHours] = parseList(scanner: scanner, scan: MonthsDaysHours.scan, delimiter: "" ) {
+		if let list : [MonthsDaysHours] = Util.parseList(scanner: scanner, scan: MonthsDaysHours.scan, delimiter: "" ) {
 			return RuleList(rules: list)
 		}
 		return nil
@@ -1424,7 +1426,7 @@ struct RuleList: ParseElement {
 	}
 }
 
-class OpenHours: ObservableObject, CustomStringConvertible {
+class OpeningHours: ObservableObject, CustomStringConvertible {
 
 	@Published var ruleList : RuleList
 	private var textual : String
@@ -1438,7 +1440,7 @@ class OpenHours: ObservableObject, CustomStringConvertible {
 			return textual
 		}
 		set {
-			let (result,errorLoc) = OpenHours.parseString(newValue)
+			let (result,errorLoc) = OpeningHours.parseString(newValue)
 			if let result = result {
 				ruleList = result
 				textual = toString()
@@ -1449,9 +1451,9 @@ class OpenHours: ObservableObject, CustomStringConvertible {
 		}
 	}
 
-	init(fromString text:String) {
+	public init(fromString text:String) {
 		textual = text
-		let (result,errorLoc) = OpenHours.parseString(text)
+		let (result,errorLoc) = OpeningHours.parseString(text)
 		self.ruleList = result ?? RuleList.emptyValue
 		self.errorIndex = errorLoc
 	}
@@ -1478,7 +1480,7 @@ class OpenHours: ObservableObject, CustomStringConvertible {
 		return ruleList.toString()
 	}
 
-	var description: String {
+	public var description: String {
 		return toString()
 	}
 
