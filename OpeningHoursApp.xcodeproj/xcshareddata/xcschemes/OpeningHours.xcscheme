@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "02FF27E525F05BCE001B4910"
-               BuildableName = "OpeningHours.app"
+               BuildableName = "OpeningHoursApp.app"
                BlueprintName = "OpeningHoursApp"
                ReferencedContainer = "container:OpeningHoursApp.xcodeproj">
             </BuildableReference>
@@ -45,7 +45,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "02FF27E525F05BCE001B4910"
-            BuildableName = "OpeningHours.app"
+            BuildableName = "OpeningHoursApp.app"
             BlueprintName = "OpeningHoursApp"
             ReferencedContainer = "container:OpeningHoursApp.xcodeproj">
          </BuildableReference>
@@ -62,7 +62,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "02FF27E525F05BCE001B4910"
-            BuildableName = "OpeningHours.app"
+            BuildableName = "OpeningHoursApp.app"
             BlueprintName = "OpeningHoursApp"
             ReferencedContainer = "container:OpeningHoursApp.xcodeproj">
          </BuildableReference>
