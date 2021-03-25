@@ -20,23 +20,21 @@ public class OpeningHoursViewController: UIHostingController<OpeningHoursView> {
 
 class OpeningHoursBinding: OpeningHours {
 
+	var binding: Binding<String>
+
+	public init(binding: Binding<String>) {
+		self.binding = binding
+		super.init()
+		self.string = binding.wrappedValue
+	}
+
 	override var ruleList : RuleList {
 		get {
 			return super.ruleList
 		}
 		set {
 			super.ruleList = newValue
-			if let binding = binding {
-				DispatchQueue.main.async {	binding.wrappedValue = self.string }
-			}
+			DispatchQueue.main.async { self.binding.wrappedValue = self.string }
 		}
-	}
-
-	var binding: Binding<String>?
-
-	public convenience init(binding:Binding<String>) {
-		self.init()
-		self.binding = binding
-		self.string = binding.wrappedValue
 	}
 }
