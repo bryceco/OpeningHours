@@ -389,7 +389,7 @@ public struct OpeningHoursView: View {
 
 	public init( string: Binding<String> ) {
 		self._string = string
-		self.openingHours = OpeningHours(string: string.wrappedValue)
+		self.openingHours = OpeningHours(binding: string)
 	}
 
 	let formatter = NoFormatter()

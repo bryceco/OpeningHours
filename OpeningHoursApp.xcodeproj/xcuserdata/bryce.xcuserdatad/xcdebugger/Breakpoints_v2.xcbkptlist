@@ -1477,9 +1477,9 @@
             filePath = "OpeningHours/Sources/OpeningHours/OpeningHours.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1490"
-            endingLineNumber = "1490"
-            landmarkName = "errorPosition"
+            startingLineNumber = "1505"
+            endingLineNumber = "1505"
+            landmarkName = "ruleList"
             landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>
