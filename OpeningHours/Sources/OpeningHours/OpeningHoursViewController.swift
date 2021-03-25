@@ -17,3 +17,26 @@ public class OpeningHoursViewController: UIHostingController<OpeningHoursView> {
 		fatalError("init(coder:) has not been implemented")
 	}
 }
+
+class OpeningHoursBinding: OpeningHours {
+
+	override var ruleList : RuleList {
+		get {
+			return super.ruleList
+		}
+		set {
+			super.ruleList = newValue
+			if let binding = binding {
+				DispatchQueue.main.async {	binding.wrappedValue = self.string }
+			}
+		}
+	}
+
+	var binding: Binding<String>?
+
+	public convenience init(binding:Binding<String>) {
+		self.init()
+		self.binding = binding
+		self.string = binding.wrappedValue
+	}
+}

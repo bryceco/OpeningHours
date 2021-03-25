@@ -1353,6 +1353,9 @@ struct MonthsDaysHours: ParseElement {
 				 modifier?.toString(),
 				 comment?.toString()]
 		var r = Util.stringListToString(list: a, delimeter: " ")
+		if r == "" {
+			r = "Mo-Su"	// we need a placeholder so we don't end up with a bare semi-colon
+		}
 		if withRuleSeparator {
 			r += ruleSeparator?.toString() ?? ""
 		}
@@ -1427,20 +1430,11 @@ struct RuleList: ParseElement {
 	}
 }
 
-import SwiftUI
-
 class OpeningHours: ObservableObject, CustomStringConvertible {
 
-	@Published var ruleList : RuleList {
-		didSet {
-			if let binding = binding {
-				DispatchQueue.main.async {	binding.wrappedValue = self.string }
-			}
-		}
-	}
+	@Published var ruleList : RuleList
 	private var stringRaw : String
 	private var errorIndex : String.Index?
-	var binding: Binding<String>?
 
 	var string: String {
 		get {
@@ -1463,16 +1457,10 @@ class OpeningHours: ObservableObject, CustomStringConvertible {
 		self.ruleList = RuleList.emptyValue
 		self.errorIndex = nil
 		self.stringRaw = ""
-		self.binding = nil
 	}
 	public convenience init(string:String) {
 		self.init()
 		self.string = string
-	}
-	public convenience init(binding:Binding<String>) {
-		self.init()
-		self.binding = binding
-		self.string = binding.wrappedValue
 	}
 
 	static func parseString(_ text:String) -> (RuleList?,String.Index?) {
