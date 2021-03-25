@@ -21,7 +21,10 @@ struct OpeningHoursApp: App {
 
     var body: some Scene {
         WindowGroup {
-			OpeningHoursView(string: $opening_hours)
+			VStack {
+				Text(opening_hours)
+				OpeningHoursView(string: $opening_hours)
+			}
 		}
     }
 }

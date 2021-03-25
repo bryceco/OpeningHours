@@ -81,10 +81,10 @@ struct HourPickerModal: View {
 				Picker("", selection: $temp.typeBinding, content: { // <2>
 					ForEach(Hour.allCases.indices, id:\.self) { typeIndex in
 						let type = Hour.allCases[typeIndex]
-						Text(typeIndex == 0 ? "clock" : type.toString())
+						Text(typeIndex == 0 ? "time of day" : type.toString())
 					}
 				})
-				.frame(width: 80)
+				.frame(width: 120)
 				.clipped()
 
 				if temp.isTime() {
@@ -384,7 +384,7 @@ struct MonthsDaysHoursView: View {
 
 public struct OpeningHoursView: View {
 
-	@Binding 		var string: String
+	@Binding var string: String
 	@ObservedObject var openingHours: OpeningHours
 
 	public init( string: Binding<String> ) {
@@ -394,7 +394,7 @@ public struct OpeningHoursView: View {
 
 	let formatter = NoFormatter()
 
-    public var body: some View {
+	public var body: some View {
 		ScrollView {
 			TextField("opening_hours", value: $openingHours.string, formatter: formatter)
 				.textFieldStyle(RoundedBorderTextFieldStyle())

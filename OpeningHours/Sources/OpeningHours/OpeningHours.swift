@@ -939,7 +939,7 @@ enum WeekdayRange: ParseElement {
 			}
 			return s
 		case let .weekdays(begin, end):
-			return "\(begin)-\(end)"
+			return begin == end ? "\(begin)" : "\(begin)-\(end)"
 		}
 	}
 }
