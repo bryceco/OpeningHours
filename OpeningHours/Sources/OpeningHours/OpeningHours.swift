@@ -197,7 +197,7 @@ enum Hour: CaseIterable, ParseElement {
 	case none			// used when trailing time of a range is missing
 
 	// time must be first here:
-	static var allCases: [Hour] = [.time(0),.sunrise(0),.sunset(0),.dawn(0),.dusk(0),.none]
+	static var allCases: [Hour] = [.time(0),.sunrise(0),.sunset(0),.dawn(0),.dusk(0)]
 
 	func toMinute() -> Int?
 	{
@@ -328,7 +328,8 @@ enum Hour: CaseIterable, ParseElement {
 			name = "dusk"
 			offset = off
 		case .none:
-			return "none"
+			assert(false)
+			return ""
 		case let .time(time):
 			let hour = time/60
 			let minute = time%60
@@ -1171,7 +1172,10 @@ struct DaysHours: ParseElement {
 		let filter = Util.elementListToString(list: holidayFilter, delimeter: ",")
 		let hrs = Util.elementListToString(list: hours, delimeter: ",")
 
-		let days2 = Util.stringListToString(list: [holi,days], delimeter: ",")
+		var days2 = Util.stringListToString(list: [holi,days], delimeter: ",")
+		if days2 == "" {
+			days2 = "Mo-Su"	// we need a placeholder so we don't end up with a bare semi-colon
+		}
 		return Util.stringListToString(list: [filter,days2,hrs], delimeter: " ")
 	}
 
@@ -1353,11 +1357,8 @@ struct MonthsDaysHours: ParseElement {
 				 modifier?.toString(),
 				 comment?.toString()]
 		var r = Util.stringListToString(list: a, delimeter: " ")
-		if r == "" {
-			r = "Mo-Su"	// we need a placeholder so we don't end up with a bare semi-colon
-		}
 		if withRuleSeparator {
-			r += ruleSeparator?.toString() ?? ""
+			r += ruleSeparator?.toString() ?? RuleSeparator.semiColon.toString()
 		}
 		return r
 	}

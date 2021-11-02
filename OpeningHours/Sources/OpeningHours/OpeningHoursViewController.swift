@@ -34,7 +34,7 @@ class OpeningHoursBinding: OpeningHours {
 		}
 		set {
 			super.ruleList = newValue
-			DispatchQueue.main.async { self.binding.wrappedValue = self.string }
+//			DispatchQueue.main.async { self.binding.wrappedValue = self.string }
 		}
 	}
 }
